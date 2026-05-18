@@ -38,7 +38,22 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 .bg2{background:#fff;border:1px solid var(--border);color:var(--text)}.bg2:hover{background:var(--bg)}
 .br{background:#FCEBEB;color:#791F1F;border:1px solid #F7C1C1}.br:hover{background:#F7C1C1}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.quadrant{border-radius:14px;padding:1rem;min-height:170px}
+.court-section{grid-column:1/-1;background:#F4F0FB;border:1px solid #C9C3F0;border-radius:14px;padding:1rem}
+.court-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;padding-bottom:10px;border-bottom:1px solid #C9C3F0}
+.court-title{font-size:12px;font-weight:600;color:#3C3489;display:flex;align-items:center;gap:7px}
+.court-card{background:#fff;border:1px solid #C9C3F0;border-radius:8px;padding:9px 11px;margin-bottom:7px}
+.court-card:hover{border-color:#AFA9EC}
+.court-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:5px}
+.court-badge{font-size:11px;padding:2px 8px;border-radius:8px;background:#EEEDFE;color:#3C3489;font-weight:500}
+.court-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px}
+.court-desc{font-size:12px;color:var(--text-2);line-height:1.4}
+.court-comment{font-size:11px;color:var(--text-3);margin-top:5px;font-style:italic}
+.court-comment-form{margin-top:8px;display:flex;gap:6px}
+.court-comment-form input{flex:1;font-size:12px;padding:5px 9px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit}
+.court-comment-form input:focus{outline:none;border-color:var(--purple-mid)}
+.court-acts{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity .1s}
+.court-card:hover .court-acts{opacity:1}
+.quadrant{border-radius:14px;padding:1rem;min-height:170px;overflow:visible}
 .q1{background:var(--red-bg);border:1px solid var(--red-bd)}
 .q2{background:var(--amber-bg);border:1px solid var(--amber-bd)}
 .q3{background:var(--blue-bg);border:1px solid var(--blue-bd)}
@@ -56,12 +71,12 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 .qcnt{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
 .q1 .qcnt{background:var(--red-bd);color:var(--red-tx)}.q2 .qcnt{background:var(--amber-bd);color:var(--amber-tx)}
 .q3 .qcnt{background:var(--blue-bd);color:var(--blue-tx)}.q4 .qcnt{background:var(--gray-bd);color:var(--gray-tx)}
-.card{background:#fff;border-radius:9px;padding:9px 11px;margin-bottom:7px;border:1px solid transparent;transition:border-color .12s}
+.card{background:#fff;border-radius:7px;padding:5px 8px;margin-bottom:4px;border:1px solid transparent;transition:border-color .12s, box-shadow .12s;cursor:grab}
 .q1 .card{border-color:var(--red-bd)}.q2 .card{border-color:var(--amber-bd)}
 .q3 .card{border-color:var(--blue-bd)}.q4 .card{border-color:var(--gray-bd)}
 .q1 .card:hover{border-color:#F09595}.q2 .card:hover{border-color:#EF9F27}
 .q3 .card:hover{border-color:#85B7EB}.q4 .card:hover{border-color:#B4B2A9}
-.lcard,.dcard{background:#fff;border:1px solid var(--border-soft);border-radius:9px;padding:9px 12px;margin-bottom:7px;display:flex;align-items:flex-start;gap:9px}
+.lcard,.dcard{background:#fff;border:1px solid var(--border-soft);border-radius:7px;padding:5px 9px;margin-bottom:4px;display:flex;align-items:flex-start;gap:7px}
 .lcard:hover,.dcard:hover{border-color:var(--border)}
 .card.done,.lcard.done,.dcard.done{opacity:.42}
 .card.done .cn,.lcard.done .cn,.dcard.done .cn{text-decoration:line-through;color:var(--text-2)}
@@ -70,7 +85,7 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 .q1 .chk{border-color:#F09595}.q2 .chk{border-color:#EF9F27}.q3 .chk{border-color:#85B7EB}
 .chk.on{background:var(--green);border-color:var(--green);color:#fff}
 .lcard .chk,.dcard .chk{border-color:var(--border)}
-.cn{font-size:13px;flex:1;line-height:1.45;word-break:break-word;color:var(--text)}
+.cn{font-size:12px;flex:1;line-height:1.4;word-break:break-word;color:var(--text)}
 .acts{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity .1s}
 .card:hover .acts,.lcard:hover .acts,.dcard:hover .acts{opacity:1}
 .ic{background:none;border:none;cursor:pointer;color:var(--text-3);font-size:14px;padding:2px 4px;border-radius:5px;line-height:1}
@@ -112,6 +127,21 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 @keyframes spin{to{transform:rotate(360deg)}}
 .errbanner{background:#FCEBEB;border:1px solid #F7C1C1;color:#791F1F;font-size:13px;padding:16px 20px;border-radius:12px;margin:2rem auto;max-width:520px;line-height:1.7}
 @media(max-width:580px){.grid{grid-template-columns:1fr}.frow{grid-template-columns:1fr}.vsw .vb{padding:5px 8px;font-size:11px}.srch{width:100px}}
+
+.card.dragging{opacity:.4;cursor:grabbing;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.quadrant.drag-over{outline:2px dashed #534AB7;outline-offset:-3px}
+
+.card{position:relative}
+.card{position:relative}
+.dot-menu{position:relative;display:inline-flex;flex-shrink:0}
+.dot-btn{background:none;border:none;cursor:pointer;color:var(--text-3);font-size:16px;line-height:1;padding:0 3px;border-radius:4px;transition:color .1s}
+.dot-btn:hover{color:var(--text);background:var(--border-soft)}
+.dot-drop{position:absolute;top:0;right:22px;background:#fff;border:1px solid var(--border);border-radius:9px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;min-width:150px;padding:4px 0;display:none}
+.dot-drop.open{display:block}
+.dot-drop-item{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:13px;cursor:pointer;color:var(--text);white-space:nowrap}
+.dot-drop-item:hover{background:var(--bg)}
+.dot-drop-item.danger{color:#A32D2D}
+.dot-drop-item.danger:hover{background:#FFF5F5}
 </style>
 </head>
 <body>
@@ -120,7 +150,7 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
   <div class="loading"><div class="spinner"></div><span>Загрузка данных...</span></div>
 </div>
 
-<div class="overlay" id="overlay" onclick="ovClick(event)">
+<div class="overlay" id="overlay">
   <div class="modal" id="modal"></div>
 </div>
 <div class="toast" id="toast"></div>
@@ -151,7 +181,7 @@ const PDOT=[
   {bg:'#B4B2A9',lb:'Несрочная неважная'},
 ];
 
-let tasks=[], projs=[], view='matrix', _sc=0;
+let tasks=[], projs=[], courts=[], view='matrix', _sc=0;
 
 const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>new Date().toISOString().split('T')[0];
@@ -189,15 +219,18 @@ async function fbDel(path){
 async function dbSetTask(t){sdot('busy');try{await fbPut('/tasks/'+t.id,t);sdot('ok');}catch{sdot('err');}}
 async function dbDelTask(id){sdot('busy');try{await fbDel('/tasks/'+id);sdot('ok');}catch{sdot('err');}}
 async function dbSetProj(p){sdot('busy');try{await fbPut('/projs/'+p.id,p);sdot('ok');}catch{sdot('err');}}
+async function dbSetCourt(c){sdot('busy');try{await fbPut('/courts/'+c.id,c);sdot('ok');}catch{sdot('err');}}
+async function dbDelCourt(id){sdot('busy');try{await fbDel('/courts/'+id);sdot('ok');}catch{sdot('err');}}
 async function dbDelProj(id){sdot('busy');try{await fbDel('/projs/'+id);sdot('ok');}catch{sdot('err');}}
 
 /* Polling sync every 10s */
 setInterval(async()=>{
   if(!document.getElementById('vm'))return;
   try{
-    const[td,pd]=await Promise.all([fbGet('/tasks'),fbGet('/projs')]);
+    const[td,pd,cd]=await Promise.all([fbGet('/tasks'),fbGet('/projs'),fbGet('/courts')]);
     tasks=td?Object.values(td):[];
     projs=pd?Object.values(pd):[];
+    courts=cd?Object.values(cd):[];
     sdot('ok');render();
   }catch{sdot('err');}
 },10000);
@@ -205,9 +238,10 @@ setInterval(async()=>{
 /* Boot */
 async function boot(){
   try{
-    const[td,pd]=await Promise.all([fbGet('/tasks'),fbGet('/projs')]);
+    const[td,pd,cd]=await Promise.all([fbGet('/tasks'),fbGet('/projs'),fbGet('/courts')]);
     tasks=td?Object.values(td):[];
     projs=pd?Object.values(pd):[];
+    courts=cd?Object.values(cd):[];
     mountApp();
   }catch(e){
     document.getElementById('root').innerHTML=`<div class="errbanner">
@@ -232,7 +266,8 @@ function mountApp(){
     <div class="toolbar">
       <div class="vsw">
         <button class="vb on" onclick="sw('matrix')">Матрица</button>
-        <button class="vb" onclick="sw('list')">Список</button>
+        <button class="vb" onclick="sw('list')">Список (по клиентам)</button>
+        <button class="vb" onclick="sw('courts')">Суды</button>
         <button class="vb" onclick="sw('projects')">Проекты</button>
         <button class="vb" onclick="sw('done')">Выполненные</button>
       </div>
@@ -240,6 +275,7 @@ function mountApp(){
       <select class="fsel" id="fProj" onchange="render()"><option value="">Все проекты</option></select>
       <button class="btn bp" onclick="openTaskModal(null,null)" style="margin-left:auto">+ Задача</button>
     </div>
+    <div id="vc" style="display:none"></div>
     <div id="vm" class="grid"></div>
     <div id="vl" style="display:none"></div>
     <div id="vp" style="display:none"></div>
@@ -290,21 +326,61 @@ function render(){
   const data=filtered();
 
   if(view==='matrix'){
-    document.getElementById('vm').innerHTML=QS.map(q=>{
+    const qHtml=QS.map(q=>{
       const it=data.filter(t=>t.u===q.u&&t.i===q.i);
-      return `<div class="quadrant ${q.cls}">
+      return `<div class="quadrant ${q.cls}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,${q.u},${q.i})">
         <div class="qh"><div class="qico">${q.ic}</div>
           <div class="qlb"><div class="qt">${q.lb}</div><div class="qs">${q.sb}</div></div>
           <span class="qcnt">${it.length}</span></div>
         ${it.length?it.map(t=>cH(t,'q')).join(''):'<div class="empty">Нет задач</div>'}
       </div>`;
     }).join('');
+    document.getElementById('vm').innerHTML=qHtml;
+  }
+
+  if(view==='courts'){
+    const active=[...courts].filter(c=>!c.finished).sort((a,b)=>(a.dt||'').localeCompare(b.dt||''));
+    const archived=[...courts].filter(c=>c.finished).sort((a,b)=>(b.finishedDt||'').localeCompare(a.finishedDt||''));
+    const archiveHtml=archived.length?`
+      <div class="court-section" style="margin-top:14px;background:#F1EFE8;border-color:#D3D1C7">
+        <div class="court-hd" style="border-bottom-color:#D3D1C7">
+          <div class="court-title" style="color:#444441">📁 Архив <span style="font-size:11px;background:#D3D1C7;color:#444441;padding:1px 8px;border-radius:9px;margin-left:4px">${archived.length}</span></div>
+        </div>
+        ${archived.map(c=>`<div class="court-card" style="background:#fff;border-color:#D3D1C7;opacity:.85">
+          <div style="display:flex;align-items:center;gap:0">
+            <span style="flex-shrink:0;width:110px;font-size:14px;font-weight:600;color:#444441">${fmtD(c.dt)}</span>
+            <span style="flex-shrink:0;width:120px;font-size:13px;font-weight:600;color:#3C3489;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.client||'')}</span>
+            <span style="flex:1;font-size:13px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.desc||'')}</span>
+            ${c.basis?`<span style="flex-shrink:0;font-size:11px;background:#EEEDFE;color:#3C3489;padding:2px 8px;border-radius:9px;margin-left:8px">${esc(c.basis)}</span>`:''}
+            <span style="flex-shrink:0;font-size:12px;color:var(--text-2);margin-left:8px">${esc(c.court||'')}</span>
+            <div class="court-acts" style="margin-left:8px">
+              <button class="ic del" onclick="delCourt('${c.id}')" title="Удалить">✕</button>
+            </div>
+          </div>
+          ${c.finishedResult?`<div style="font-size:12px;color:var(--text-2);margin-top:5px">📋 ${esc(c.finishedResult)}</div>`:''}
+          <div id="archivehist_${c.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #D3D1C7">
+            <div style="font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">История рассмотрений</div>
+            ${(()=>{const h=c.history?Object.values(c.history).sort((a,b)=>a.dt.localeCompare(b.dt)):[];return h.length?h.map(e=>`<div style="display:flex;gap:10px;padding:5px 0;border-bottom:0.5px solid #D3D1C7;font-size:12px"><span style="flex-shrink:0;font-weight:600;color:var(--text);min-width:90px">${fmtD(e.dt)}${e.tm?' '+e.tm:''}</span><span style="color:var(--text-2);flex:1">${esc(e.reason||'—')}</span></div>`).join(''):'<div style="font-size:12px;color:var(--text-3);padding:4px 0">Нет записей</div>';})()}
+          </div>
+          <div style="margin-top:7px;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn bg2" style="font-size:11px;padding:4px 10px;white-space:nowrap" id="archistbtn_${c.id}" onclick="toggleArchiveHist('${c.id}')">▸ История</button>
+            <button class="btn bg2" style="font-size:11px;padding:4px 10px;white-space:nowrap" onclick="openReviveModal('${c.id}')">↑ Назначить в другой инстанции</button>
+          </div>
+        </div>`).join('')}
+      </div>`:'';
+    document.getElementById('vc').innerHTML=`<div class="court-section" style="margin-bottom:0">
+      <div class="court-hd">
+        <div class="court-title">⚖️ Суды <span style="font-size:11px;background:#C9C3F0;color:#3C3489;padding:1px 8px;border-radius:9px;margin-left:4px">${active.length}</span></div>
+        <button class="btn bp" style="font-size:12px;padding:4px 12px" onclick="openCourtModal(null)">+ Добавить</button>
+      </div>
+      ${active.length?active.map(c=>courtCardH(c)).join(''):'<div class="empty">Судебных заседаний нет</div>'}
+    </div>${archiveHtml}`;
   }
 
   if(view==='list'){
     if(!data.length){document.getElementById('vl').innerHTML='<div class="empty" style="padding:2rem">Задач нет</div>';return;}
-    const legend='<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:1rem;font-size:12px;color:var(--text-2);align-items:center">'+
-      PDOT.map(d=>`<span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:${d.bg};flex-shrink:0;display:inline-block"></span>${d.lb}</span>`).join('')+
+    const legend='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:.75rem;font-size:11px;color:var(--text-2);align-items:center">'+
+      PDOT.map(d=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${d.bg};flex-shrink:0;display:inline-block"></span>${d.lb}</span>`).join('')+
     '</div>';
     const po=t=>priIdx(t);
     const groups=[];
@@ -314,10 +390,19 @@ function render(){
     });
     const noP=[...data.filter(t=>!t.p)].sort((a,b)=>po(a)-po(b));
     if(noP.length)groups.push({label:'Без проекта',bg:'var(--border-soft)',tx:'var(--text-2)',bd:'var(--border)',items:noP});
-    document.getElementById('vl').innerHTML=legend+groups.map(g=>
-      `<div class="lsec"><div class="lhead" style="background:${g.bg};color:${g.tx};border-color:${g.bd}">
-        <span class="lt">${esc(g.label)}</span><span class="lc">${g.items.length}</span>
-      </div>${g.items.map(t=>cH(t,'l')).join('')}</div>`).join('');
+    const cols=[[],[]];
+    groups.forEach((g,i)=>cols[i%2].push(g));
+    const colHtml=cols.map(col=>
+      '<div style="display:flex;flex-direction:column;gap:10px;min-width:0">'+
+      col.map(g=>
+        `<div class="lsec"><div class="lhead" style="background:${g.bg};color:${g.tx};border-color:${g.bd}">
+          <span class="lt">${esc(g.label)}</span><span class="lc">${g.items.length}</span>
+        </div>${g.items.map(t=>cH(t,'l')).join('')}</div>`
+      ).join('')+
+      '</div>'
+    ).join('');
+    document.getElementById('vl').innerHTML=legend+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start">'+colHtml+'</div>';
   }
 
   if(view==='projects'){
@@ -361,6 +446,29 @@ function cH(t,mode){
   const undo=t.done?`<button class="ic undo" onclick="undoT('${t.id}')" title="Вернуть в работу">↩</button>`:'';
   const cls=mode==='q'?'card':mode==='l'?'lcard':'dcard';
   const showDot=mode==='l'||mode==='d';
+  if(mode==='q'){
+    const undoItem=t.done?`<div class="dot-drop-item" onclick="undoT('${t.id}');closeAllDots()">↩ Вернуть в работу</div>`:'';
+    const dotMenu=`<div class="dot-menu" style="position:absolute;top:4px;right:-22px" onmouseleave="dotLeave(event)" onmouseenter="dotEnter()">
+      <button class="dot-btn" onclick="toggleDot(event,'dot_${t.id}')" title="Действия" style="font-size:16px;padding:0 2px;line-height:1">⋮</button>
+      <div class="dot-drop" id="dot_${t.id}">
+        ${undoItem}
+        <div class="dot-drop-item" onclick="openTaskModal('${t.id}',null);closeAllDots()">✎ Редактировать</div>
+        <div class="dot-drop-item danger" onclick="delT('${t.id}');closeAllDots()">🗑 Удалить</div>
+      </div>
+    </div>`;
+    return `<div class="${cls}${t.done?' done':''}" draggable="true" ondragstart="dragStart(event,'${t.id}')" ondragend="dragEnd(event)" style="position:relative;margin-right:22px">
+      ${dotMenu}
+      <div style="display:flex;align-items:flex-start;gap:5px">
+        <button class="chk${t.done?' on':''}" onclick="togDone('${t.id}')" style="flex-shrink:0;margin-top:2px">${t.done?'✓':''}</button>
+        <span class="cn" style="flex:1;min-width:0;line-height:1.4">${esc(t.name)}</span>
+        ${tagH(t.p)?`<span style="flex-shrink:0;line-height:1.4;margin-top:1px">${tagH(t.p)}</span>`:''}
+      </div>
+      ${(dl||t.note)?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:3px;padding-left:22px">
+        ${dl?`<span style="font-size:11px;color:var(--text-3);display:inline-flex;align-items:center;line-height:1">${dl}</span>`:''}
+        ${t.note?`<span style="font-size:11px;color:var(--text-2);display:inline-flex;align-items:center;line-height:1">${esc(t.note)}</span>`:''}
+      </div>`:''}
+    </div>`;
+  }
   return `<div class="${cls}${t.done?' done':''}">
     <button class="chk${t.done?' on':''}" onclick="togDone('${t.id}')">${t.done?'✓':''}</button>
     ${showDot?dotH(t):''}
@@ -380,7 +488,8 @@ function cH(t,mode){
 
 function sw(v){
   view=v;
-  document.querySelectorAll('.vb').forEach((b,i)=>b.classList.toggle('on',['matrix','list','projects','done'][i]===v));
+  document.querySelectorAll('.vb').forEach((b,i)=>b.classList.toggle('on',['matrix','list','courts','projects','done'][i]===v));
+  document.getElementById('vc').style.display=v==='courts'?'block':'none';
   document.getElementById('vm').style.display=v==='matrix'?'grid':'none';
   ['vl','vp','vd'].forEach((id,i)=>document.getElementById(id).style.display=['list','projects','done'][i]===v?'block':'none');
   render();
@@ -414,7 +523,14 @@ function toast(msg){
   clearTimeout(window._tt);window._tt=setTimeout(()=>el.classList.remove('show'),2400);
 }
 function closeOv(){document.getElementById('overlay').classList.remove('open');}
-function ovClick(e){if(e.target===e.currentTarget)closeOv();}
+let _ovMousedownOnBg=false;
+document.getElementById('overlay').addEventListener('mousedown',e=>{
+  _ovMousedownOnBg=(e.target===e.currentTarget);
+});
+document.getElementById('overlay').addEventListener('click',e=>{
+  if(_ovMousedownOnBg&&e.target===e.currentTarget)closeOv();
+  _ovMousedownOnBg=false;
+});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOv();});
 function dotsH(sel){return PAL.map((c,i)=>`<span class="cdot${sel===i?' sel':''}" style="background:${c.bg};border-color:${c.bd}" onclick="selC(${i})"></span>`).join('');}
 function selC(i){_sc=i;document.querySelectorAll('.cdot').forEach((el,idx)=>el.classList.toggle('sel',idx===i));}
@@ -526,6 +642,361 @@ async function delP(id){
   await Promise.all(orphans.map(t=>dbSetTask(t)));
   toast('Проект удалён');
 }
+
+
+
+
+function courtDateColor(dt){
+  if(!dt)return'var(--text)';
+  const now=new Date(); now.setHours(0,0,0,0);
+  const d=new Date(dt); d.setHours(0,0,0,0);
+  const diff=(d-now)/(1000*60*60*24);
+  if(diff<0)return'#A32D2D';
+  const dayOfWeek=now.getDay();
+  const daysToSunday=dayOfWeek===0?0:7-dayOfWeek;
+  const endOfWeek=new Date(now); endOfWeek.setDate(now.getDate()+daysToSunday);
+  if(d<=endOfWeek)return'#0F6E56';
+  return'var(--text)';
+}
+
+function courtCardH(c){
+  const p=fmtD(c.dt);
+  const dateColor=courtDateColor(c.dt);
+  const isPast=c.dt&&new Date(c.dt)<new Date(new Date().toDateString());
+  const hist=c.history?Object.values(c.history).sort((a,b)=>a.dt.localeCompare(b.dt)):[];
+  const histHtml=`<div id="hist_${c.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-soft)">
+    <div style="font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">История рассмотрений</div>
+    ${hist.length?hist.map(h=>`<div style="display:flex;gap:10px;padding:5px 0;border-bottom:0.5px solid var(--border-soft);font-size:12px">
+      <span style="flex-shrink:0;font-weight:600;color:var(--text);min-width:90px">${fmtD(h.dt)}${h.tm?' '+h.tm:''}</span>
+      <span style="color:var(--text-2);flex:1">${esc(h.reason||'—')}</span>
+    </div>`).join(''):'<div style="font-size:12px;color:var(--text-3);padding:6px 0">Нет записей</div>'}
+  </div>`;
+  return `<div class="court-card">
+    <div style="display:flex;align-items:center;gap:0">
+      <span style="flex-shrink:0;width:110px;font-size:16px;font-weight:700;color:${dateColor};letter-spacing:.01em">${p}</span>
+      <span style="flex-shrink:0;width:72px;font-size:16px;font-weight:700;color:var(--purple)">${esc(c.tm||'')}</span>
+      <span style="flex-shrink:0;width:120px;font-size:13px;font-weight:600;color:#3C3489;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.client||'')}</span>
+      <span style="flex:1;font-size:13px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.desc||'')}</span>
+      <span style="flex-shrink:0;font-size:12px;font-weight:500;color:var(--text-2);white-space:nowrap;margin-left:12px">${esc(c.court||'')}</span>
+      <div class="court-acts" style="flex-shrink:0;margin-left:8px">
+        <button class="ic edit" onclick="openCourtModal('${c.id}')" title="Редактировать">✎</button>
+        <button class="ic del" onclick="delCourt('${c.id}')" title="Удалить">✕</button>
+      </div>
+    </div>
+    ${c.comment?`<div style="font-size:11px;color:var(--text-2);margin-top:5px">💬 ${esc(c.comment)}</div>`:''}
+    <div style="display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap">
+      <input type="text" placeholder="Добавить комментарий..." id="cc_${c.id}"
+        style="flex:1;min-width:120px;font-size:12px;padding:4px 8px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit"
+        onkeydown="if(event.key==='Enter')saveCourtComment('${c.id}')">
+      <button class="btn bg2" style="font-size:11px;padding:4px 9px" onclick="saveCourtComment('${c.id}')">✓</button>
+      <button class="btn bg2" style="font-size:11px;padding:4px 9px;white-space:nowrap${isPast?';border-color:#EF9F27;color:#633806':''}" onclick="openPostponeModal('${c.id}')">↷ Отложить</button>
+      <button class="btn bg2" style="font-size:11px;padding:4px 9px;white-space:nowrap${isPast?';border-color:#EF9F27;color:#633806':''}" onclick="openFinishModal('${c.id}')">✓ Завершить</button>
+      <button class="btn bg2" style="font-size:11px;padding:4px 9px;white-space:nowrap" id="histbtn_${c.id}" onclick="toggleHist('${c.id}')">▸ История${hist.length?' ('+hist.length+')':''}</button>
+    </div>
+    ${histHtml}
+  </div>`;
+}
+
+function toggleHist(id){
+  const el=document.getElementById('hist_'+id);
+  const btn=document.getElementById('histbtn_'+id);
+  if(!el)return;
+  const open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  if(btn)btn.textContent=open?'▾ Свернуть':'▸ История ('+(el.querySelectorAll('[style*="border-bottom"]').length)+')';
+}
+
+function openPostponeModal(id){
+  const c=courts.find(x=>x.id===id);if(!c)return;
+  document.getElementById('modal').innerHTML=`
+    <div class="mhd"><h2>↷ Отложить заседание</h2>
+      <button class="cls" onclick="closeOv()">×</button></div>
+    <div style="font-size:12px;color:var(--text-2);margin-bottom:12px;padding:8px 10px;background:var(--bg);border-radius:8px">
+      Текущее: <b>${fmtD(c.dt)}${c.tm?' '+c.tm:''}</b> — будет сохранено в историю
+    </div>
+    <div class="frow">
+      <div class="f"><label>Новая дата <span class="req">*</span></label>
+        <input type="date" id="iPdt"></div>
+      <div class="f"><label>Новое время</label>
+        <input type="text" id="iPtm" placeholder="09:00"></div>
+    </div>
+    <div class="f"><label>Причина отложения</label>
+      <input type="text" id="iPreason" placeholder="Укажите причину..."></div>
+    <div class="mbtns">
+      <button class="btn bg2" onclick="closeOv()">Отмена</button>
+      <button class="btn bp" onclick="savePostpone('${id}')">Сохранить</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('iPdt').focus(),60);
+}
+
+async function savePostpone(id){
+  const newDt=(document.getElementById('iPdt').value||'').trim();
+  if(!newDt){toast('Укажите новую дату');return;}
+  const c=courts.find(x=>x.id===id);if(!c)return;
+  const histEntry={dt:c.dt,tm:c.tm||null,reason:(document.getElementById('iPreason').value||'').trim()||null};
+  const history=c.history?{...c.history}:{};
+  history[genId()]=histEntry;
+  const upd={...c,dt:newDt,tm:(document.getElementById('iPtm').value||'').trim()||null,history};
+  courts=courts.map(x=>x.id===id?upd:x);
+  closeOv();render();await dbSetCourt(upd);toast('Заседание отложено');
+}
+
+
+async function saveCourtComment(id){
+  const el=document.getElementById('cc_'+id);if(!el)return;
+  const txt=(el.value||'').trim();if(!txt)return;
+  const c=courts.find(x=>x.id===id);if(!c)return;
+  const upd=Object.assign({},c,{comment:txt});
+  courts=courts.map(x=>x.id===id?upd:x);
+  el.value='';render();
+  await dbSetCourt(upd);toast('Комментарий сохранён');
+}
+
+async function delCourt(id){
+  courts=courts.filter(x=>x.id!==id);render();
+  await dbDelCourt(id);toast('Заседание удалено');
+}
+
+async function delCourtAndClose(id){delCourt(id);closeOv();}
+
+
+
+
+
+
+/* ── Dot menu ── */
+function toggleDot(e, id){
+  e.stopPropagation();
+  const menu=document.getElementById(id);
+  if(!menu)return;
+  const isOpen=menu.classList.contains('open');
+  closeAllDots();
+  if(!isOpen)menu.classList.add('open');
+}
+
+function closeAllDots(){
+  document.querySelectorAll('.dot-drop.open').forEach(m=>m.classList.remove('open'));
+}
+
+let _dotTimer=null;
+
+function dotLeave(e){
+  const wrap=e.currentTarget;
+  _dotTimer=setTimeout(()=>{
+    // check if any dot-menu or dot-drop is still hovered
+    const hovered=document.querySelector('.dot-menu:hover, .dot-drop:hover');
+    if(!hovered) closeAllDots();
+  }, 300);
+}
+
+function dotEnter(){
+  clearTimeout(_dotTimer);
+}
+
+
+/* ── Drag & Drop ── */
+let _dragId=null;
+
+function dragStart(e,id){
+  _dragId=id;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',id);
+  setTimeout(()=>{
+    const el=document.querySelector('[draggable="true"].card:not(.done)');
+    // mark the specific dragged element
+  },0);
+  e.currentTarget.classList.add('dragging');
+}
+
+function dragEnd(e){
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.quadrant').forEach(q=>q.classList.remove('drag-over'));
+}
+
+function dragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  const quad=e.currentTarget.closest('.quadrant')||e.currentTarget;
+  quad.classList.add('drag-over');
+}
+
+function dragLeave(e){
+  const quad=e.currentTarget.closest('.quadrant')||e.currentTarget;
+  // only remove if leaving the quadrant itself, not a child
+  if(!quad.contains(e.relatedTarget)){
+    quad.classList.remove('drag-over');
+  }
+}
+
+async function drop(e,u,i){
+  e.preventDefault();
+  const quad=e.currentTarget.closest('.quadrant')||e.currentTarget;
+  quad.classList.remove('drag-over');
+  const id=_dragId||e.dataTransfer.getData('text/plain');
+  if(!id)return;
+  const t=tasks.find(x=>x.id===id);
+  if(!t)return;
+  if(t.u===u&&t.i===i)return; // same quadrant, nothing to do
+  const upd={...t,u,i};
+  tasks=tasks.map(x=>x.id===id?upd:x);
+  render();
+  await dbSetTask(upd);
+  toast('Задача перемещена');
+}
+
+
+
+function openCourtModal(id){
+  const c=id?courts.find(x=>x.id===id):null;
+  const dtVal=c&&c.dt?c.dt:'';
+  const tmVal=c&&c.tm?esc(c.tm):'';
+  const courtVal=c&&c.court?esc(c.court):'';
+  const descVal=c&&c.desc?esc(c.desc):'';
+  document.getElementById('modal').innerHTML=`
+    <div class="mhd"><h2>${c?'Редактировать заседание':'Новое заседание'}</h2>
+      <button class="cls" onclick="closeOv()">×</button></div>
+    <div class="frow">
+      <div class="f"><label>Дата <span class="req">*</span></label>
+        <input type="date" id="iCdt" value="${dtVal}"></div>
+      <div class="f"><label>Время</label>
+        <input type="text" id="iCtm" value="${tmVal}" placeholder="09:00"></div>
+    </div>
+    <div class="f"><label>Суд <span class="req">*</span></label>
+      <input type="text" id="iCcourt" value="${courtVal}" placeholder="Название суда..."></div>
+    <div class="f"><label>Клиент</label>
+      <input type="text" id="iCclient" value="${c&&c.client?esc(c.client):''}" placeholder="Имя клиента..."></div>
+    <div class="f"><label>Описание</label>
+      <textarea id="iCdesc" placeholder="Суть дела, номер дела...">${descVal}</textarea></div>
+    <div class="mbtns">
+      <button class="btn bg2" onclick="closeOv()">Отмена</button>
+      ${id?`<button class="btn br" onclick="delCourtAndClose('${id}')">Удалить</button>`:''}
+      <button class="btn bp" onclick="saveCourt('${id||''}')">Сохранить</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('iCdt').focus(),60);
+}
+
+
+async function saveCourt(eid){
+  const dt=(document.getElementById('iCdt').value||'').trim();
+  const court=(document.getElementById('iCcourt').value||'').trim();
+  if(!dt||!court){toast('Заполните дату и суд');return;}
+  const prev=eid?courts.find(x=>x.id===eid):null;
+  const obj={
+    id:eid||genId(),dt,
+    tm:(document.getElementById('iCtm').value||'').trim()||null,
+    court,
+    client:(document.getElementById('iCclient').value||'').trim()||null,
+    desc:(document.getElementById('iCdesc').value||'').trim()||null,
+    comment:prev?prev.comment||null:null
+  };
+  if(eid)courts=courts.map(x=>x.id===eid?obj:x);else courts.push(obj);
+  closeOv();render();await dbSetCourt(obj);toast(eid?'Заседание обновлено':'Заседание добавлено');
+}
+
+
+function toggleArchiveHist(id){
+  const el=document.getElementById('archivehist_'+id);
+  const btn=document.getElementById('archistbtn_'+id);
+  if(!el)return;
+  const open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  if(btn)btn.textContent=open?'▾ Свернуть':'▸ История';
+}
+
+
+function openFinishModal(id){
+  const c=courts.find(x=>x.id===id);if(!c)return;
+  document.getElementById('modal').innerHTML=`
+    <div class="mhd"><h2>✓ Завершить рассмотрение</h2>
+      <button class="cls" onclick="closeOv()">×</button></div>
+    <div style="font-size:12px;color:var(--text-2);margin-bottom:12px;padding:8px 10px;background:var(--bg);border-radius:8px">
+      Дело: <b>${esc(c.court||'')}${c.client?' — '+esc(c.client):''}</b>
+    </div>
+    <div class="f"><label>Дата окончания <span class="req">*</span></label>
+      <input type="date" id="iFdt" value="${today()}"></div>
+    <div class="f"><label>Результат рассмотрения</label>
+      <textarea id="iFresult" placeholder="Опишите результат..." style="min-height:70px"></textarea></div>
+    <div class="mbtns">
+      <button class="btn bg2" onclick="closeOv()">Отмена</button>
+      <button class="btn bp" onclick="saveFinish('${id}')">Завершить</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('iFdt').focus(),60);
+}
+
+async function saveFinish(id){
+  const dt=(document.getElementById('iFdt').value||'').trim();
+  if(!dt){toast('Укажите дату окончания');return;}
+  const c=courts.find(x=>x.id===id);if(!c)return;
+  const upd={...c,
+    finished:true,
+    finishedDt:dt,
+    finishedResult:(document.getElementById('iFresult').value||'').trim()||null
+  };
+  courts=courts.map(x=>x.id===id?upd:x);
+  closeOv();render();await dbSetCourt(upd);toast('Дело завершено');
+}
+
+function openReviveModal(id){
+  const c=courts.find(x=>x.id===id);if(!c)return;
+  document.getElementById('modal').innerHTML=`
+    <div class="mhd"><h2>↑ Новое рассмотрение</h2>
+      <button class="cls" onclick="closeOv()">×</button></div>
+    <div style="font-size:12px;color:var(--text-2);margin-bottom:12px;padding:8px 10px;background:var(--bg);border-radius:8px">
+      Дело: <b>${esc(c.court||'')}${c.client?' — '+esc(c.client):''}</b>
+    </div>
+    <div class="f"><label>Основание</label>
+      <select id="iRbase">
+        <option value="Апелляция">Апелляция</option>
+        <option value="Кассация">Кассация</option>
+        <option value="Новое рассмотрение после отмены">Новое рассмотрение после отмены апелляцией</option>
+        <option value="Надзор">Надзор</option>
+        <option value="Иное">Иное</option>
+      </select></div>
+    <div class="frow">
+      <div class="f"><label>Новая дата <span class="req">*</span></label>
+        <input type="date" id="iRdt"></div>
+      <div class="f"><label>Время</label>
+        <input type="text" id="iRtm" placeholder="09:00"></div>
+    </div>
+    <div class="f"><label>Суд</label>
+      <input type="text" id="iRcourt" value="${esc(c.court||'')}" placeholder="Название суда..."></div>
+    <div class="f"><label>Описание</label>
+      <textarea id="iRdesc" placeholder="Суть дела...">${esc(c.desc||'')}</textarea></div>
+    <div class="mbtns">
+      <button class="btn bg2" onclick="closeOv()">Отмена</button>
+      <button class="btn bp" onclick="saveRevive('${id}')">Назначить</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('iRbase').focus(),60);
+}
+
+async function saveRevive(id){
+  const dt=(document.getElementById('iRdt').value||'').trim();
+  if(!dt){toast('Укажите дату');return;}
+  const c=courts.find(x=>x.id===id);if(!c)return;
+  const base=document.getElementById('iRbase').value;
+  // save finish record to history of new case
+  const history={};
+  history[genId()]={dt:c.finishedDt||c.dt,tm:null,reason:'Завершено: '+(c.finishedResult||'')};
+  if(c.history)Object.assign(history,c.history);
+  const upd={...c,
+    finished:false,
+    finishedDt:null,
+    finishedResult:null,
+    dt,
+    tm:(document.getElementById('iRtm').value||'').trim()||null,
+    court:(document.getElementById('iRcourt').value||'').trim()||c.court,
+    desc:(document.getElementById('iRdesc').value||'').trim()||c.desc,
+    basis:base,
+    history
+  };
+  courts=courts.map(x=>x.id===id?upd:x);
+  closeOv();render();await dbSetCourt(upd);toast('Рассмотрение назначено');
+}
+
 
 boot();
 </script>
