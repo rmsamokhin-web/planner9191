@@ -1,4 +1,4 @@
-const CACHE = 'planner-v1';
+const CACHE = 'planner-v2';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
@@ -18,7 +18,6 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // For Firebase API calls — always go to network
   if(e.request.url.includes('firebasedatabase.app')){
     return;
   }
