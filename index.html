@@ -134,7 +134,7 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 .errbanner{background:#FCEBEB;border:1px solid #F7C1C1;color:#791F1F;font-size:13px;padding:16px 20px;border-radius:12px;margin:2rem auto;max-width:520px;line-height:1.7}
 @media(max-width:580px){.grid{grid-template-columns:1fr}.frow{grid-template-columns:1fr}.vsw .vb{padding:5px 8px;font-size:11px}.srch{width:100px}}
 
-.card.dragging{opacity:.4;cursor:grabbing;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.card.dragging{opacity:0 !important;pointer-events:none}
 .quadrant.drag-over{outline:2px dashed #534AB7;outline-offset:-3px}
 
 .card{position:relative}
@@ -333,12 +333,12 @@ function render(){
 
   if(view==='matrix'){
     const qHtml=QS.map(q=>{
-      const it=data.filter(t=>t.u===q.u&&t.i===q.i);
+      const it=data.filter(t=>t.u===q.u&&t.i===q.i).sort((a,b)=>(a._ord||0)-(b._ord||0));
       return `<div class="quadrant ${q.cls}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,${q.u},${q.i})">
         <div class="qh"><div class="qico">${q.ic}</div>
           <div class="qlb"><div class="qt">${q.lb}</div><div class="qs">${q.sb}</div></div>
           <span class="qcnt">${it.length}</span></div>
-        ${it.length?it.map(t=>cH(t,'q')).join(''):'<div class="empty">Нет задач</div>'}
+        ${it.length?it.map(t=>cH(t,'q',q.u,q.i)).join(''):'<div class="empty">Нет задач</div>'}
       </div>`;
     }).join('');
     document.getElementById('vm').innerHTML=qHtml;
@@ -445,7 +445,7 @@ function render(){
   }
 }
 
-function cH(t,mode){
+function cH(t,mode,qu,qi){
   const over=t.date&&t.date<today();
   const dl=t.date?`<span class="dl${over?' dl-over':''}">📅 ${fmtD(t.date)}${over?' — просрочено':''}</span>`:'';
   const note=t.note?`<div class="note-t">📝 ${esc(t.note)}</div>`:'';
@@ -462,7 +462,7 @@ function cH(t,mode){
         <div class="dot-drop-item danger" onclick="delT('${t.id}');closeAllDots()">🗑 Удалить</div>
       </div>
     </div>`;
-    return `<div class="${cls}${t.done?' done':''}" draggable="true" ondragstart="dragStart(event,'${t.id}')" ondragend="dragEnd(event)" style="position:relative;margin-right:22px">
+    return `<div class="${cls}${t.done?' done':''}" data-id="${t.id}" draggable="true" ondragstart="dragStart(event,'${t.id}')" ondragend="dragEnd(event)" ondragover="cardOver(event,'${t.id}',${t.u},${t.i})" ondragleave="cardLeave(event)" ondrop="cardDrop(event,'${t.id}',${t.u},${t.i})" style="position:relative;margin-right:22px">
       ${dotMenu}
       <div style="display:flex;align-items:flex-start;gap:5px">
         <button class="chk${t.done?' on':''}" onclick="togDone('${t.id}')" style="flex-shrink:0;margin-top:2px">${t.done?'✓':''}</button>
@@ -809,15 +809,15 @@ function dragStart(e,id){
   e.dataTransfer.effectAllowed='move';
   e.dataTransfer.setData('text/plain',id);
   setTimeout(()=>{
-    const el=document.querySelector('[draggable="true"].card:not(.done)');
-    // mark the specific dragged element
+    const el=e.target.closest('.card');
+    if(el) el.classList.add('dragging');
   },0);
-  e.currentTarget.classList.add('dragging');
 }
 
 function dragEnd(e){
-  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.card.dragging').forEach(el=>el.classList.remove('dragging'));
   document.querySelectorAll('.quadrant').forEach(q=>q.classList.remove('drag-over'));
+  _dragId=null;
 }
 
 function dragOver(e){
@@ -833,6 +833,56 @@ function dragLeave(e){
   if(!quad.contains(e.relatedTarget)){
     quad.classList.remove('drag-over');
   }
+}
+
+function cardOver(e,targetId,u,i){
+  e.preventDefault();
+  e.stopPropagation();
+  if(!_dragId||targetId===_dragId)return;
+  const src=tasks.find(x=>x.id===_dragId);
+  const tgt=tasks.find(x=>x.id===targetId);
+  if(!src||!tgt||src.u!==tgt.u||src.i!==tgt.i)return;
+  const rect=e.currentTarget.getBoundingClientRect();
+  const below=e.clientY>rect.top+rect.height/2;
+  // Live reorder in tasks array
+  let q=tasks.filter(t=>t.u===u&&t.i===i&&!t.done).sort((a,b)=>(a._ord||0)-(b._ord||0));
+  q.forEach((t,idx)=>{t._ord=(idx+1)*10;});
+  const srcOrd=q.find(t=>t.id===_dragId)?._ord||0;
+  q=q.filter(t=>t.id!==_dragId);
+  const tgtIdx=q.findIndex(t=>t.id===targetId);
+  q.splice(below?tgtIdx+1:tgtIdx,0,src);
+  q.forEach((t,idx)=>{const o=tasks.find(x=>x.id===t.id);if(o)o._ord=(idx+1)*10;});
+  renderQuadrant(u,i);
+}
+
+function cardLeave(e){}
+
+function renderQuadrant(u,i){
+  const q=QS.find(x=>x.u===u&&x.i===i);
+  if(!q)return;
+  const data=filtered();
+  const it=data.filter(t=>t.u===q.u&&t.i===q.i).sort((a,b)=>(a._ord||0)-(b._ord||0));
+  const container=document.querySelector('.quadrant.'+q.cls);
+  if(!container)return;
+  const header=container.querySelector('.qh');
+  const headerHtml=header?header.outerHTML:'';
+  container.innerHTML=headerHtml+(it.length?it.map(t=>cH(t,'q',q.u,q.i)).join(''):'<div class="empty">Нет задач</div>');
+  // Keep dragged card invisible
+  if(_dragId){
+    container.querySelectorAll('[data-id="'+_dragId+'"]').forEach(el=>el.classList.add('dragging'));
+  }
+}
+
+async function cardDrop(e,targetId,u,i){
+  e.preventDefault();
+  e.stopPropagation();
+  if(!_dragId||_dragId===targetId)return;
+  const src=tasks.find(x=>x.id===_dragId);
+  const tgt=tasks.find(x=>x.id===targetId);
+  if(!src||!tgt||src.u!==tgt.u||src.i!==tgt.i)return;
+  // Order already updated in tasks[] by cardOver - just save
+  const toSave=tasks.filter(t=>t.u===u&&t.i===i&&!t.done);
+  await Promise.all(toSave.map(t=>dbSetTask(t)));
 }
 
 async function drop(e,u,i){
