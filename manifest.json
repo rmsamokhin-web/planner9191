@@ -5,7 +5,8 @@
   "start_url": "/planner9191/",
   "id": "/planner9191/",
   "display": "standalone",
-  "background_color": "#f7f7f5",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#534AB7",
   "theme_color": "#534AB7",
   "orientation": "any",
   "icons": [
@@ -18,6 +19,22 @@
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Планировщик задач"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Планировщик задач"
     }
   ]
 }
