@@ -631,7 +631,7 @@ async function saveTask(eid){
   const prev=eid?tasks.find(x=>x.id===eid):null;
   const obj={id:eid||genId(),name,p:pid||null,
     u:+document.getElementById('iU').value,i:+document.getElementById('iI').value,
-    done:prev?prev.done:false,exec:(document.getElementById('iExec')||{}).value||null,date:document.getElementById('iDate').value||null,
+    done:prev?prev.done:false,_ord:prev?prev._ord||null:null,exec:(document.getElementById('iExec')||{}).value||null,date:document.getElementById('iDate').value||null,
     note:(document.getElementById('iNote').value||'').trim()||null,doneAt:prev?prev.doneAt:null};
   if(eid)tasks=tasks.map(x=>x.id===eid?obj:x);else tasks.push(obj);
   closeOv();render();await dbSetTask(obj);toast(eid?'Задача обновлена':'Задача добавлена');
@@ -880,10 +880,34 @@ async function quadDrop(e,u,i){
   const src=tasks.find(x=>x.id===_dragId);
   if(!src)return;
 
+  // cross-quadrant drop
+  // cardOver may have already moved src visually, check if src is now in target quadrant
+  if(src.u===u&&src.i===i&&_prevSrcU!==undefined&&(_prevSrcU!==u||_prevSrcI!==i)){
+    // cardOver already handled the move - just save both quadrants
+    const toSave=tasks.filter(t=>(t.u===u&&t.i===i)||(t.u===_prevSrcU&&t.i===_prevSrcI)).filter(t=>!t.done);
+    render();
+    await Promise.all(toSave.map(t=>fbPut('/tasks/'+t.id,t)));
+    sdot('ok');
+    toast('Задача перемещена');
+    _prevSrcU=undefined;_prevSrcI=undefined;
+    return;
+  }
+  if(src.u!==u||src.i!==i){
+    // dropped on empty quadrant - no cardOver called, move to end
+    const maxOrd=Math.max(0,...tasks.filter(t=>t.u===u&&t.i===i&&!t.done).map(t=>t._ord||0));
+    src.u=u; src.i=i; src._ord=maxOrd+10;
+    tasks=tasks.map(x=>x.id===_dragId?src:x);
+    render();
+    await dbSetTask(src);
+    sdot('ok');
+    toast('Задача перемещена');
+    return;
+  }
+
   if(_lastHoverTarget&&_lastHoverTarget!==_dragId){
-    // intra-quadrant reorder
     const tgt=tasks.find(x=>x.id===_lastHoverTarget);
     if(tgt&&tgt.u===u&&tgt.i===i){
+    // intra-quadrant reorder
       // Read final order from DOM
       const q=QS.find(x=>x.u===u&&x.i===i);
       if(q){
@@ -1089,15 +1113,19 @@ function cardOver(e,targetId,u,i){
   _lastHoverTarget=targetId;
   const src=tasks.find(x=>x.id===_dragId);
   const tgt=tasks.find(x=>x.id===targetId);
-  if(!src||!tgt||src.u!==tgt.u||src.i!==tgt.i)return;
+  if(!src||!tgt)return;
   const rect=e.currentTarget.getBoundingClientRect();
   const below=e.clientY>rect.top+rect.height/2;
+  const origU=src.u, origI=src.i;
+  // temporarily move src to target quadrant for live preview
+  src.u=u; src.i=i;
   let q=tasks.filter(t=>t.u===u&&t.i===i&&!t.done).sort((a,b)=>(a._ord||0)-(b._ord||0));
   q.forEach((t,idx)=>{t._ord=(idx+1)*10;});
   q=q.filter(t=>t.id!==_dragId);
   const tgtIdx=q.findIndex(t=>t.id===targetId);
   q.splice(below?tgtIdx+1:tgtIdx,0,src);
   q.forEach((t,idx)=>{const o=tasks.find(x=>x.id===t.id);if(o)o._ord=(idx+1)*10;});
+  if(origU!==u||origI!==i) renderQuadrant(origU,origI);
   renderQuadrant(u,i);
 }
 
