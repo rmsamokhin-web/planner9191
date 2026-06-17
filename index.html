@@ -100,6 +100,15 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 .meta{display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap}
 .dl{font-size:11px;color:var(--text-3)}.dl-over{color:#A32D2D;font-weight:500}
 .note-t{font-size:11px;color:var(--text-2);margin-top:5px;line-height:1.4}
+.exec-badge{display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;cursor:pointer;flex-shrink:0;user-select:none;line-height:1.6}
+.exec-badge:hover{opacity:.75}
+.exec-I{background:#E1F5EE;color:#085041}
+.exec-R{background:#FCEBEB;color:#791F1F}
+.exec-O{background:#FAEEDA;color:#633806}
+.exec-q{background:#F1EFE8;color:#444441}
+.exec-menu{position:absolute;right:0;bottom:28px;background:#fff;border:1px solid var(--border);border-radius:9px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;padding:4px 0;min-width:120px}
+.exec-menu-item{display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+.exec-menu-item:hover{background:var(--bg)}
 .lsec{margin-bottom:1.25rem}
 .lhead{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;margin-bottom:8px;border:1px solid transparent}
 .lhead .lt{font-size:12px;font-weight:600}.lhead .lc{margin-left:auto;font-size:11px;opacity:.7}
@@ -136,6 +145,12 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 
 .card.dragging{opacity:0 !important;pointer-events:none}
 .quadrant.drag-over{outline:2px dashed #534AB7;outline-offset:-3px}
+.exec-filter-btns{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.exec-filter-btn{padding:6px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:#fff;color:var(--text);font-weight:400;transition:all .1s}
+.exec-filter-btn.active-R{background:#FCEBEB;color:#791F1F;border-color:#F7C1C1;font-weight:500}
+.exec-filter-btn.active-I{background:#E1F5EE;color:#085041;border-color:#5DCAA5;font-weight:500}
+.sub-matrix{margin-top:14px}
+.sub-matrix-title{font-size:13px;font-weight:500;color:var(--text-2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
 
 .card{position:relative}
 .card{position:relative}
@@ -187,7 +202,7 @@ const PDOT=[
   {bg:'#B4B2A9',lb:'Несрочная неважная'},
 ];
 
-let tasks=[], projs=[], courts=[], view='matrix', _sc=0;
+let tasks=[], projs=[], courts=[], view='matrix', _sc=0, _execFilter=null;
 
 const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>new Date().toISOString().split('T')[0];
@@ -281,12 +296,18 @@ function mountApp(){
       <select class="fsel" id="fProj" onchange="render()"><option value="">Все проекты</option></select>
       <button class="btn bp" onclick="openTaskModal(null,null)" style="margin-left:auto">+ Задача</button>
     </div>
+    <div id="execFilterBtns" style="display:none;gap:8px;margin-bottom:12px">
+      <button class="exec-filter-btn" id="efAll" onclick="toggleExecFilter(null)">Все задачи</button>
+      <button class="exec-filter-btn" id="efR" onclick="toggleExecFilter('R')"><span class="exec-badge exec-R" style="margin-right:5px;vertical-align:middle">Р</span>Задачи Руслана</button>
+      <button class="exec-filter-btn" id="efI" onclick="toggleExecFilter('I')"><span class="exec-badge exec-I" style="margin-right:5px;vertical-align:middle">И</span>Задачи Ильнура</button>
+    </div>
     <div id="vc" style="display:none"></div>
     <div id="vm" class="grid"></div>
     <div id="vl" style="display:none"></div>
     <div id="vp" style="display:none"></div>
     <div id="vd" style="display:none"></div>
   </div>`;
+  document.getElementById('execFilterBtns').style.display='flex';
   render();
 }
 
@@ -332,13 +353,14 @@ function render(){
   const data=filtered();
 
   if(view==='matrix'){
+    const mdata=_execFilter?data.filter(t=>t.exec===_execFilter||!t.exec||t.exec==='O'):data;
     const qHtml=QS.map(q=>{
-      const it=data.filter(t=>t.u===q.u&&t.i===q.i).sort((a,b)=>(a._ord||0)-(b._ord||0));
+      const it=mdata.filter(t=>t.u===q.u&&t.i===q.i).sort((a,b)=>(a._ord||0)-(b._ord||0));
       return `<div class="quadrant ${q.cls}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,${q.u},${q.i})">
         <div class="qh"><div class="qico">${q.ic}</div>
           <div class="qlb"><div class="qt">${q.lb}</div><div class="qs">${q.sb}</div></div>
           <span class="qcnt">${it.length}</span></div>
-        ${it.length?it.map(t=>cH(t,'q',q.u,q.i)).join(''):'<div class="empty">Нет задач</div>'}
+        ${it.length?it.map(t=>cH(t,'q')).join(''):'<div class="empty">Нет задач</div>'}
       </div>`;
     }).join('');
     document.getElementById('vm').innerHTML=qHtml;
@@ -445,7 +467,7 @@ function render(){
   }
 }
 
-function cH(t,mode,qu,qi){
+function cH(t,mode){
   const over=t.date&&t.date<today();
   const dl=t.date?`<span class="dl${over?' dl-over':''}">📅 ${fmtD(t.date)}${over?' — просрочено':''}</span>`:'';
   const note=t.note?`<div class="note-t">📝 ${esc(t.note)}</div>`:'';
@@ -462,6 +484,8 @@ function cH(t,mode,qu,qi){
         <div class="dot-drop-item danger" onclick="delT('${t.id}');closeAllDots()">🗑 Удалить</div>
       </div>
     </div>`;
+    const execCls={I:'exec-I',R:'exec-R',O:'exec-O'}[t.exec]||'exec-q';
+    const execLbl={I:'И',R:'Р',O:'Общ.'}[t.exec]||'?';
     return `<div class="${cls}${t.done?' done':''}" data-id="${t.id}" draggable="true" ondragstart="dragStart(event,'${t.id}')" ondragend="dragEnd(event)" ondragover="cardOver(event,'${t.id}',${t.u},${t.i})" ondragleave="cardLeave(event)" ondrop="cardDrop(event,'${t.id}',${t.u},${t.i})" style="position:relative;margin-right:22px">
       ${dotMenu}
       <div style="display:flex;align-items:flex-start;gap:5px">
@@ -469,10 +493,21 @@ function cH(t,mode,qu,qi){
         <span class="cn" style="flex:1;min-width:0;line-height:1.4">${esc(t.name)}</span>
         ${tagH(t.p)?`<span style="flex-shrink:0;line-height:1.4;margin-top:1px">${tagH(t.p)}</span>`:''}
       </div>
-      ${(dl||t.note)?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:3px;padding-left:22px">
-        ${dl?`<span style="font-size:11px;color:var(--text-3);display:inline-flex;align-items:center;line-height:1">${dl}</span>`:''}
-        ${t.note?`<span style="font-size:11px;color:var(--text-2);display:inline-flex;align-items:center;line-height:1">${esc(t.note)}</span>`:''}
-      </div>`:''}
+      <div style="display:flex;align-items:center;gap:6px;margin-top:3px;padding-left:23px;flex-wrap:nowrap">
+        <div style="flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+          ${dl?`<span style="font-size:11px;color:var(--text-3);display:inline-flex;align-items:center;line-height:1">${dl}</span>`:''}
+          ${t.note?`<span style="font-size:11px;color:var(--text-2);display:inline-flex;align-items:center;line-height:1">${esc(t.note)}</span>`:''}
+        </div>
+        <div style="position:relative;flex-shrink:0">
+          <span class="exec-badge ${execCls}" onclick="toggleExecMenu(event,'emenu_${t.id}')" title="Исполнитель">${execLbl}</span>
+          <div class="exec-menu" id="emenu_${t.id}" style="display:none">
+            <div class="exec-menu-item" onclick="setExec('${t.id}','I');closeExecMenus()"><span class="exec-badge exec-I">И</span> Ильнур</div>
+            <div class="exec-menu-item" onclick="setExec('${t.id}','R');closeExecMenus()"><span class="exec-badge exec-R">Р</span> Руслан</div>
+            <div class="exec-menu-item" onclick="setExec('${t.id}','O');closeExecMenus()"><span class="exec-badge exec-O">Общ.</span> Общая</div>
+            <div class="exec-menu-item" onclick="setExec('${t.id}',null);closeExecMenus()"><span class="exec-badge exec-q">?</span> Не назначен</div>
+          </div>
+        </div>
+      </div>
     </div>`;
   }
   return `<div class="${cls}${t.done?' done':''}">
@@ -494,10 +529,13 @@ function cH(t,mode,qu,qi){
 
 function sw(v){
   view=v;
+  if(v!=='matrix'){_execFilter=null;}
   document.querySelectorAll('.vb').forEach((b,i)=>b.classList.toggle('on',['matrix','list','courts','projects','done'][i]===v));
   document.getElementById('vc').style.display=v==='courts'?'block':'none';
   document.getElementById('vm').style.display=v==='matrix'?'grid':'none';
   ['vl','vp','vd'].forEach((id,i)=>document.getElementById(id).style.display=['list','projects','done'][i]===v?'block':'none');
+  const efDiv=document.getElementById('execFilterBtns');
+  if(efDiv)efDiv.style.display=v==='matrix'?'flex':'none';
   render();
 }
 
@@ -568,6 +606,13 @@ function openTaskModal(id,preP){
         <option value="1"${(t?t.i:1)===1?' selected':''}>Важная</option>
         <option value="0"${(t?t.i:1)===0?' selected':''}>Неважная</option></select></div>
     </div>
+    <div class="f"><label>Исполнитель</label>
+      <select id="iExec">
+        <option value="">? Не назначен</option>
+        <option value="I"${(t&&t.exec==='I')?' selected':''}>И — Ильнур</option>
+        <option value="R"${(t&&t.exec==='R')?' selected':''}>Р — Руслан</option>
+        <option value="O"${(t&&t.exec==='O')?' selected':''}>Общ. — Общая задача</option>
+      </select></div>
     <div class="f"><label>Дедлайн</label><input type="date" id="iDate" value="${t?t.date||'':''}"></div>
     <div class="f"><label>Заметка</label><textarea id="iNote" placeholder="Дополнительная информация...">${t?esc(t.note||''):''}</textarea></div>
     <div class="mbtns">
@@ -593,7 +638,7 @@ async function saveTask(eid){
   const prev=eid?tasks.find(x=>x.id===eid):null;
   const obj={id:eid||genId(),name,p:pid||null,
     u:+document.getElementById('iU').value,i:+document.getElementById('iI').value,
-    done:prev?prev.done:false,date:document.getElementById('iDate').value||null,
+    done:prev?prev.done:false,exec:(document.getElementById('iExec')||{}).value||null,date:document.getElementById('iDate').value||null,
     note:(document.getElementById('iNote').value||'').trim()||null,doneAt:prev?prev.doneAt:null};
   if(eid)tasks=tasks.map(x=>x.id===eid?obj:x);else tasks.push(obj);
   closeOv();render();await dbSetTask(obj);toast(eid?'Задача обновлена':'Задача добавлена');
@@ -835,56 +880,6 @@ function dragLeave(e){
   }
 }
 
-function cardOver(e,targetId,u,i){
-  e.preventDefault();
-  e.stopPropagation();
-  if(!_dragId||targetId===_dragId)return;
-  const src=tasks.find(x=>x.id===_dragId);
-  const tgt=tasks.find(x=>x.id===targetId);
-  if(!src||!tgt||src.u!==tgt.u||src.i!==tgt.i)return;
-  const rect=e.currentTarget.getBoundingClientRect();
-  const below=e.clientY>rect.top+rect.height/2;
-  // Live reorder in tasks array
-  let q=tasks.filter(t=>t.u===u&&t.i===i&&!t.done).sort((a,b)=>(a._ord||0)-(b._ord||0));
-  q.forEach((t,idx)=>{t._ord=(idx+1)*10;});
-  const srcOrd=q.find(t=>t.id===_dragId)?._ord||0;
-  q=q.filter(t=>t.id!==_dragId);
-  const tgtIdx=q.findIndex(t=>t.id===targetId);
-  q.splice(below?tgtIdx+1:tgtIdx,0,src);
-  q.forEach((t,idx)=>{const o=tasks.find(x=>x.id===t.id);if(o)o._ord=(idx+1)*10;});
-  renderQuadrant(u,i);
-}
-
-function cardLeave(e){}
-
-function renderQuadrant(u,i){
-  const q=QS.find(x=>x.u===u&&x.i===i);
-  if(!q)return;
-  const data=filtered();
-  const it=data.filter(t=>t.u===q.u&&t.i===q.i).sort((a,b)=>(a._ord||0)-(b._ord||0));
-  const container=document.querySelector('.quadrant.'+q.cls);
-  if(!container)return;
-  const header=container.querySelector('.qh');
-  const headerHtml=header?header.outerHTML:'';
-  container.innerHTML=headerHtml+(it.length?it.map(t=>cH(t,'q',q.u,q.i)).join(''):'<div class="empty">Нет задач</div>');
-  // Keep dragged card invisible
-  if(_dragId){
-    container.querySelectorAll('[data-id="'+_dragId+'"]').forEach(el=>el.classList.add('dragging'));
-  }
-}
-
-async function cardDrop(e,targetId,u,i){
-  e.preventDefault();
-  e.stopPropagation();
-  if(!_dragId||_dragId===targetId)return;
-  const src=tasks.find(x=>x.id===_dragId);
-  const tgt=tasks.find(x=>x.id===targetId);
-  if(!src||!tgt||src.u!==tgt.u||src.i!==tgt.i)return;
-  // Order already updated in tasks[] by cardOver - just save
-  const toSave=tasks.filter(t=>t.u===u&&t.i===i&&!t.done);
-  await Promise.all(toSave.map(t=>dbSetTask(t)));
-}
-
 async function drop(e,u,i){
   e.preventDefault();
   const quad=e.currentTarget.closest('.quadrant')||e.currentTarget;
@@ -1051,6 +1046,89 @@ async function saveRevive(id){
   };
   courts=courts.map(x=>x.id===id?upd:x);
   closeOv();render();await dbSetCourt(upd);toast('Рассмотрение назначено');
+}
+
+
+function cardOver(e,targetId,u,i){
+  e.preventDefault();
+  e.stopPropagation();
+  if(!_dragId||targetId===_dragId)return;
+  const src=tasks.find(x=>x.id===_dragId);
+  const tgt=tasks.find(x=>x.id===targetId);
+  if(!src||!tgt||src.u!==tgt.u||src.i!==tgt.i)return;
+  const rect=e.currentTarget.getBoundingClientRect();
+  const below=e.clientY>rect.top+rect.height/2;
+  let q=tasks.filter(t=>t.u===u&&t.i===i&&!t.done).sort((a,b)=>(a._ord||0)-(b._ord||0));
+  q.forEach((t,idx)=>{t._ord=(idx+1)*10;});
+  q=q.filter(t=>t.id!==_dragId);
+  const tgtIdx=q.findIndex(t=>t.id===targetId);
+  q.splice(below?tgtIdx+1:tgtIdx,0,src);
+  q.forEach((t,idx)=>{const o=tasks.find(x=>x.id===t.id);if(o)o._ord=(idx+1)*10;});
+  renderQuadrant(u,i);
+}
+
+function cardLeave(e){}
+
+function renderQuadrant(u,i){
+  const q=QS.find(x=>x.u===u&&x.i===i);
+  if(!q)return;
+  const data=filtered();
+  const it=data.filter(t=>t.u===q.u&&t.i===q.i).sort((a,b)=>(a._ord||0)-(b._ord||0));
+  const container=document.querySelector('.quadrant.'+q.cls);
+  if(!container)return;
+  const header=container.querySelector('.qh');
+  const headerHtml=header?header.outerHTML:'';
+  container.innerHTML=headerHtml+(it.length?it.map(t=>cH(t,'q')).join(''):'<div class="empty">Нет задач</div>');
+  if(_dragId){
+    container.querySelectorAll('[data-id="'+_dragId+'"]').forEach(el=>el.classList.add('dragging'));
+  }
+}
+
+async function cardDrop(e,targetId,u,i){
+  e.preventDefault();
+  e.stopPropagation();
+  if(!_dragId||_dragId===targetId)return;
+  const src=tasks.find(x=>x.id===_dragId);
+  const tgt=tasks.find(x=>x.id===targetId);
+  if(!src||!tgt||src.u!==tgt.u||src.i!==tgt.i)return;
+  const toSave=tasks.filter(t=>t.u===u&&t.i===i&&!t.done);
+  await Promise.all(toSave.map(t=>dbSetTask(t)));
+}
+
+function toggleExecFilter(exec){
+  _execFilter=exec;
+  const efAll=document.getElementById('efAll');
+  const efR=document.getElementById('efR');
+  const efI=document.getElementById('efI');
+  if(efAll){efAll.className='exec-filter-btn'+(exec===null?' active-I':'');}
+  if(efR){efR.className='exec-filter-btn'+(exec==='R'?' active-R':'');}
+  if(efI){efI.className='exec-filter-btn'+(exec==='I'?' active-I':'');}
+  render();
+}
+
+
+/* ── Executor ── */
+function toggleExecMenu(e,id){
+  e.stopPropagation();
+  const menu=document.getElementById(id);
+  if(!menu)return;
+  const isOpen=menu.style.display==='block';
+  closeExecMenus();
+  if(!isOpen) menu.style.display='block';
+}
+
+function closeExecMenus(){
+  document.querySelectorAll('.exec-menu').forEach(m=>m.style.display='none');
+}
+
+document.addEventListener('click',()=>closeExecMenus());
+
+async function setExec(id,exec){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  const upd={...t,exec:exec||null};
+  tasks=tasks.map(x=>x.id===id?upd:x);
+  render();
+  await dbSetTask(upd);
 }
 
 
