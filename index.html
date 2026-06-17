@@ -840,12 +840,15 @@ function dotEnter(){
 
 
 /* ── Drag & Drop ── */
-let _dragId=null;
+let _dragId=null, _dragOverId=null, _dragBelow=false, _lastHoverTarget=null, _prevSrcU, _prevSrcI;
 
 function dragStart(e,id){
   _dragId=id;
-  pausePoll(60000); // pause polling during and after drag
+  pausePoll(60000);
   _lastHoverTarget=null;
+  const _srcTask=tasks.find(x=>x.id===id);
+  _prevSrcU=_srcTask?_srcTask.u:undefined;
+  _prevSrcI=_srcTask?_srcTask.i:undefined;
   e.dataTransfer.effectAllowed='move';
   e.dataTransfer.setData('text/plain',id);
   setTimeout(()=>{
@@ -881,26 +884,29 @@ async function quadDrop(e,u,i){
   if(!src)return;
 
   // cross-quadrant drop
-  // cardOver may have already moved src visually, check if src is now in target quadrant
-  if(src.u===u&&src.i===i&&_prevSrcU!==undefined&&(_prevSrcU!==u||_prevSrcI!==i)){
-    // cardOver already handled the move - just save both quadrants
-    const toSave=tasks.filter(t=>(t.u===u&&t.i===i)||(t.u===_prevSrcU&&t.i===_prevSrcI)).filter(t=>!t.done);
-    render();
-    await Promise.all(toSave.map(t=>fbPut('/tasks/'+t.id,t)));
+  const isCrossQuadrant=_prevSrcU!==undefined&&(_prevSrcU!==u||_prevSrcI!==i);
+  if(isCrossQuadrant||src.u!==u||src.i!==i){
+    if(src.u===u&&src.i===i){
+      // cardOver already moved src visually - save both quadrants
+      const toSave=tasks.filter(t=>!t.done&&(
+        (t.u===u&&t.i===i)||(t.u===_prevSrcU&&t.i===_prevSrcI)
+      ));
+      render();
+      console.log('cross-quadrant saving', toSave.length, 'tasks');
+      toSave.forEach(t=>console.log(t.name,'u='+t.u,'i='+t.i,'_ord='+t._ord));
+      await Promise.all(toSave.map(t=>fbPut('/tasks/'+t.id,t)));
+    } else {
+      // dropped on empty quadrant - cardOver never fired
+      const maxOrd=Math.max(0,...tasks.filter(t=>t.u===u&&t.i===i&&!t.done).map(t=>t._ord||0));
+      src.u=u; src.i=i; src._ord=maxOrd+10;
+      tasks=tasks.map(x=>x.id===_dragId?src:x);
+      render();
+      console.log('empty quadrant drop, saving', src.name, 'u='+u, 'i='+i);
+      await dbSetTask(src);
+    }
     sdot('ok');
     toast('Задача перемещена');
     _prevSrcU=undefined;_prevSrcI=undefined;
-    return;
-  }
-  if(src.u!==u||src.i!==i){
-    // dropped on empty quadrant - no cardOver called, move to end
-    const maxOrd=Math.max(0,...tasks.filter(t=>t.u===u&&t.i===i&&!t.done).map(t=>t._ord||0));
-    src.u=u; src.i=i; src._ord=maxOrd+10;
-    tasks=tasks.map(x=>x.id===_dragId?src:x);
-    render();
-    await dbSetTask(src);
-    sdot('ok');
-    toast('Задача перемещена');
     return;
   }
 
