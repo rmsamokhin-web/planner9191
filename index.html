@@ -245,8 +245,11 @@ async function dbDelCourt(id){sdot('busy');try{await fbDel('/courts/'+id);sdot('
 async function dbDelProj(id){sdot('busy');try{await fbDel('/projs/'+id);sdot('ok');}catch{sdot('err');}}
 
 /* Polling sync every 10s */
+let _pollPausedUntil=0;
 setInterval(async()=>{
   if(!document.getElementById('vm'))return;
+  if(Date.now()<_pollPausedUntil)return; // paused after drag
+  if(_dragId)return; // dragging right now
   try{
     const[td,pd,cd]=await Promise.all([fbGet('/tasks'),fbGet('/projs'),fbGet('/courts')]);
     tasks=td?Object.values(td):[];
@@ -256,6 +259,8 @@ setInterval(async()=>{
   }catch{sdot('err');}
 },10000);
 
+function pausePoll(ms=15000){_pollPausedUntil=Date.now()+ms;}
+
 /* Boot */
 async function boot(){
   try{
@@ -263,6 +268,7 @@ async function boot(){
     tasks=td?Object.values(td):[];
     projs=pd?Object.values(pd):[];
     courts=cd?Object.values(cd):[];
+    await initOrdIfNeeded();
     mountApp();
   }catch(e){
     document.getElementById('root').innerHTML=`<div class="errbanner">
@@ -851,6 +857,7 @@ let _dragId=null;
 
 function dragStart(e,id){
   _dragId=id;
+  pausePoll(60000); // pause polling during and after drag
   e.dataTransfer.effectAllowed='move';
   e.dataTransfer.setData('text/plain',id);
   setTimeout(()=>{
@@ -1072,7 +1079,8 @@ function cardLeave(e){}
 function renderQuadrant(u,i){
   const q=QS.find(x=>x.u===u&&x.i===i);
   if(!q)return;
-  const data=filtered();
+  const allData=filtered();
+  const data=_execFilter?allData.filter(t=>t.exec===_execFilter||!t.exec||t.exec==='O'):allData;
   const it=data.filter(t=>t.u===q.u&&t.i===q.i).sort((a,b)=>(a._ord||0)-(b._ord||0));
   const container=document.querySelector('.quadrant.'+q.cls);
   if(!container)return;
@@ -1091,8 +1099,58 @@ async function cardDrop(e,targetId,u,i){
   const src=tasks.find(x=>x.id===_dragId);
   const tgt=tasks.find(x=>x.id===targetId);
   if(!src||!tgt||src.u!==tgt.u||src.i!==tgt.i)return;
+
+  // Read final visual order from DOM
+  const q=QS.find(x=>x.u===u&&x.i===i);
+  if(q){
+    const container=document.querySelector('.quadrant.'+q.cls);
+    if(container){
+      const domCards=container.querySelectorAll('.card[data-id]');
+      domCards.forEach((el,idx)=>{
+        const t=tasks.find(x=>x.id===el.dataset.id);
+        if(t) t._ord=(idx+1)*10;
+      });
+    }
+  }
+
+  if(_execFilter){
+    recomputeGlobalOrder(u,i);
+  }
+
   const toSave=tasks.filter(t=>t.u===u&&t.i===i&&!t.done);
-  await Promise.all(toSave.map(t=>dbSetTask(t)));
+  render();
+  await Promise.all(toSave.map(t=>fbPut('/tasks/'+t.id,t)));
+  sdot('ok');
+  pausePoll(60000);
+}
+
+function recomputeGlobalOrder(u,i){
+  // Get all tasks in this quadrant sorted by current _ord
+  const all=tasks.filter(t=>t.u===u&&t.i===i&&!t.done).sort((a,b)=>(a._ord||0)-(b._ord||0));
+  // Split into R, I, and other (common/unset)
+  const listR=all.filter(t=>t.exec==='R');
+  const listI=all.filter(t=>t.exec==='I');
+  const listO=all.filter(t=>!t.exec||t.exec==='O');
+  // Interleave: R[0], I[0], R[1], I[1], ... then leftover, then O interspersed
+  const maxRI=Math.max(listR.length,listI.length);
+  const merged=[];
+  for(let k=0;k<maxRI;k++){
+    if(listR[k])merged.push(listR[k]);
+    if(listI[k])merged.push(listI[k]);
+  }
+  // Insert O tasks at their relative position among merged
+  // Simple: append O tasks at their _ord-relative positions
+  listO.forEach(ot=>{
+    // find first merged task with higher _ord than ot, insert before it
+    const pos=merged.findIndex(t=>(t._ord||0)>(ot._ord||0));
+    if(pos===-1)merged.push(ot);
+    else merged.splice(pos,0,ot);
+  });
+  // Assign new _ord
+  merged.forEach((t,idx)=>{
+    const orig=tasks.find(x=>x.id===t.id);
+    if(orig)orig._ord=(idx+1)*10;
+  });
 }
 
 function toggleExecFilter(exec){
@@ -1129,6 +1187,33 @@ async function setExec(id,exec){
   tasks=tasks.map(x=>x.id===id?upd:x);
   render();
   await dbSetTask(upd);
+}
+
+
+async function initOrdIfNeeded(){
+  // Group tasks by quadrant, assign _ord to those missing it
+  const needsSave=[];
+  const quadrants=[
+    {u:1,i:1},{u:0,i:1},{u:1,i:0},{u:0,i:0}
+  ];
+  quadrants.forEach(({u,i})=>{
+    const qt=tasks.filter(t=>t.u===u&&t.i===i&&!t.done);
+    // find max existing _ord
+    const hasOrd=qt.filter(t=>t._ord);
+    const noOrd=qt.filter(t=>!t._ord);
+    if(noOrd.length===0)return; // all have _ord, skip
+    // assign _ord starting after max existing
+    let maxOrd=hasOrd.length?Math.max(...hasOrd.map(t=>t._ord)):0;
+    noOrd.forEach(t=>{
+      maxOrd+=10;
+      t._ord=maxOrd;
+      needsSave.push(t);
+    });
+  });
+  if(needsSave.length>0){
+    await Promise.all(needsSave.map(t=>fbPut('/tasks/'+t.id,t)));
+    console.log('Initialized _ord for',needsSave.length,'tasks');
+  }
 }
 
 
