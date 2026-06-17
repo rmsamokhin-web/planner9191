@@ -245,21 +245,8 @@ async function dbDelCourt(id){sdot('busy');try{await fbDel('/courts/'+id);sdot('
 async function dbDelProj(id){sdot('busy');try{await fbDel('/projs/'+id);sdot('ok');}catch{sdot('err');}}
 
 /* Polling sync every 10s */
-let _pollPausedUntil=0;
-setInterval(async()=>{
-  if(!document.getElementById('vm'))return;
-  if(Date.now()<_pollPausedUntil)return; // paused after drag
-  if(_dragId)return; // dragging right now
-  try{
-    const[td,pd,cd]=await Promise.all([fbGet('/tasks'),fbGet('/projs'),fbGet('/courts')]);
-    tasks=td?Object.values(td):[];
-    projs=pd?Object.values(pd):[];
-    courts=cd?Object.values(cd):[];
-    sdot('ok');render();
-  }catch{sdot('err');}
-},10000);
-
-function pausePoll(ms=15000){_pollPausedUntil=Date.now()+ms;}
+/* polling removed — refresh page to sync between devices */
+function pausePoll(){}
 
 /* Boot */
 async function boot(){
@@ -1106,9 +1093,10 @@ async function cardDrop(e,targetId,u,i){
     const container=document.querySelector('.quadrant.'+q.cls);
     if(container){
       const domCards=container.querySelectorAll('.card[data-id]');
+      console.log('DOM order:', [...domCards].map(el=>el.dataset.id));
       domCards.forEach((el,idx)=>{
         const t=tasks.find(x=>x.id===el.dataset.id);
-        if(t) t._ord=(idx+1)*10;
+        if(t){ t._ord=(idx+1)*10; console.log(t.name, '->', t._ord); }
       });
     }
   }
@@ -1119,7 +1107,9 @@ async function cardDrop(e,targetId,u,i){
 
   const toSave=tasks.filter(t=>t.u===u&&t.i===i&&!t.done);
   render();
+  console.log('Saving to Firebase:', toSave.map(t=>t.name+'='+t._ord));
   await Promise.all(toSave.map(t=>fbPut('/tasks/'+t.id,t)));
+  console.log('Saved OK');
   sdot('ok');
   pausePoll(60000);
 }
