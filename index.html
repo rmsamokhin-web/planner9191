@@ -232,16 +232,17 @@ const CLAIM_TYPES=[
   {v:'letter',lb:'Письмо',cls:'tp-letter'}
 ];
 const claimType=v=>CLAIM_TYPES.find(t=>t.v===v)||CLAIM_TYPES[0];
-const CLAIM_METHODS=['Заказное письмо с уведомлением','Курьер','ЭДО','Email','Лично вручена','Мессенджер','Иное'];
+const CLAIM_METHODS=['Заказное письмо (бумажное)','Заказное письмо (электронное)','Курьер','ЭДО','Email','Лично вручена','Мессенджер','Иное'];
 const CLAIM_RESULTS=[
   {v:'suit',lb:'Иск в суд',cls:'res-suit'},
+  {v:'task',lb:'Переведена в задачу',cls:'res-suit'},
   {v:'ok',lb:'Претензия удовлетворена',cls:'res-ok'},
   {v:'none',lb:'Оставлена без ответа — дело без движения по инициативе клиента',cls:'res-none'},
   {v:'other',lb:'Иное',cls:'res-none'}
 ];
 const claimRes=v=>CLAIM_RESULTS.find(r=>r.v===v)||CLAIM_RESULTS[3];
 
-let tasks=[], projs=[], courts=[], claims=[], view='matrix', _sc=0, _execFilter=null, _claimAnsAuto=true;
+let tasks=[], projs=[], courts=[], claims=[], view='matrix', _sc=0, _execFilter=null, _claimAnsAuto=true, _taskFromClaim=null;
 
 const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
@@ -410,7 +411,7 @@ function render(){
       if(fp&&c.p!==fp)return false;
       if(sr){
         const pn=((getPrj(c.p)||{name:''}).name+'').toLowerCase();
-        const hay=((claimType(c.type).lb)+' '+(c.to||'')+' '+(c.essence||'')+' '+(c.method||'')+' '+pn).toLowerCase();
+        const hay=((claimType(c.type).lb)+' '+(c.to||'')+' '+(c.person||'')+' '+(c.essence||'')+' '+(c.method||'')+' '+pn).toLowerCase();
         if(!hay.includes(sr))return false;
       }
       return true;
@@ -434,13 +435,14 @@ function render(){
     const rowH=c=>`<tr>
       <td>${tpH(c)}</td>
       <td style="white-space:nowrap">${fmtD(c.sentDt)}</td>
-      <td>${tagH(c.p)||'<span style="color:var(--text-3)">—</span>'}</td>
+      <td>${tagH(c.p)||'<span style="color:var(--text-3)">—</span>'}${c.person?`<div style="font-size:11px;color:var(--text-2);margin-top:2px">${esc(c.person)}</div>`:''}</td>
       <td style="min-width:110px">${esc(c.to)}</td>
       <td class="cl-essence">${esc(c.essence)}</td>
       <td><span class="cl-badge">${esc(c.method)}</span></td>
       <td style="white-space:nowrap">${fmtD(c.answerDt)}${dueBadge(c)?'<br>'+dueBadge(c):''}</td>
       <td><div class="cl-acts">
         <button class="ic edit" onclick="openClaimModal('${c.id}')" title="Редактировать">✎</button>
+        <button class="ic" onclick="claimToTask('${c.id}')" title="Создать задачу (запись уйдёт в архив)" style="color:var(--purple);font-weight:600">＋</button>
         <button class="ic" onclick="openClaimArchive('${c.id}')" title="В архив" style="color:var(--purple)">📥</button>
         <button class="ic del" onclick="delClaim('${c.id}')" title="Удалить">✕</button>
       </div></td>
@@ -449,7 +451,7 @@ function render(){
       <td>${tpH(c)}</td>
       <td style="white-space:nowrap">${fmtD(c.archiveDt)}</td>
       <td><span class="cl-badge ${r.cls}" title="Итог">${r.lb}</span></td>
-      <td>${tagH(c.p)||'<span style="color:var(--text-3)">—</span>'}</td>
+      <td>${tagH(c.p)||'<span style="color:var(--text-3)">—</span>'}${c.person?`<div style="font-size:11px;color:var(--text-2);margin-top:2px">${esc(c.person)}</div>`:''}</td>
       <td style="min-width:110px">${esc(c.to)}</td>
       <td class="cl-essence">${esc(c.essence)}${c.resComment?`<div style="font-size:11px;color:var(--text-3);margin-top:3px">💬 ${esc(c.resComment)}</div>`:''}</td>
       <td style="white-space:nowrap">${fmtD(c.sentDt)}</td>
@@ -683,7 +685,7 @@ function toast(msg){
   el.textContent=msg;el.classList.add('show');
   clearTimeout(window._tt);window._tt=setTimeout(()=>el.classList.remove('show'),2400);
 }
-function closeOv(){document.getElementById('overlay').classList.remove('open');}
+function closeOv(){document.getElementById('overlay').classList.remove('open');_taskFromClaim=null;}
 let _ovMousedownOnBg=false;
 document.getElementById('overlay').addEventListener('mousedown',e=>{
   _ovMousedownOnBg=(e.target===e.currentTarget);
@@ -696,14 +698,14 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOv();});
 function dotsH(sel){return PAL.map((c,i)=>`<span class="cdot${sel===i?' sel':''}" style="background:${c.bg};border-color:${c.bd}" onclick="selC(${i})"></span>`).join('');}
 function selC(i){_sc=i;document.querySelectorAll('.cdot').forEach((el,idx)=>el.classList.toggle('sel',idx===i));}
 
-function openTaskModal(id,preP){
+function openTaskModal(id,preP,prefill){
   const t=id?tasks.find(x=>x.id===id):null;
-  const selP=t?t.p:(preP||'');_sc=0;
+  const selP=t?t.p:(prefill&&prefill.p?prefill.p:(preP||''));_sc=0;
   document.getElementById('modal').innerHTML=`
     <div class="mhd"><h2>${t?'Редактировать задачу':'Новая задача'}</h2>
       <button class="cls" onclick="closeOv()">×</button></div>
     <div class="f"><label>Название <span class="req">*</span></label>
-      <input type="text" id="iName" value="${t?esc(t.name):''}" placeholder="Что нужно сделать?"></div>
+      <input type="text" id="iName" value="${t?esc(t.name):(prefill?esc(prefill.name||''):'')}" placeholder="Что нужно сделать?"></div>
     <div class="f"><label>Проект</label>
       <select id="iProj" onchange="document.getElementById('npw').style.display=this.value==='__new__'?'block':'none'">
         <option value="">— без проекта —</option>
@@ -730,8 +732,8 @@ function openTaskModal(id,preP){
         <option value="R"${(t&&t.exec==='R')?' selected':''}>Р — Руслан</option>
         <option value="O"${(t&&t.exec==='O')?' selected':''}>Общ. — Общая задача</option>
       </select></div>
-    <div class="f"><label>Дедлайн</label><input type="date" id="iDate" value="${t?t.date||'':''}"></div>
-    <div class="f"><label>Заметка</label><textarea id="iNote" placeholder="Дополнительная информация...">${t?esc(t.note||''):''}</textarea></div>
+    <div class="f"><label>Дедлайн</label><input type="date" id="iDate" value="${t?t.date||'':(prefill&&prefill.date?prefill.date:'')}"></div>
+    <div class="f"><label>Заметка</label><textarea id="iNote" placeholder="Дополнительная информация...">${t?esc(t.note||''):(prefill?esc(prefill.note||''):'')}</textarea></div>
     <div class="mbtns">
       <button class="btn bg2" onclick="closeOv()">Отмена</button>
       ${t?`<button class="btn br" onclick="delT('${t.id}');closeOv()">Удалить</button>`:''}
@@ -742,6 +744,7 @@ function openTaskModal(id,preP){
 }
 
 async function saveTask(eid){
+  const fromClaim=_taskFromClaim;
   const ne=document.getElementById('iName');
   const name=(ne.value||'').trim();
   if(!name){ne.classList.add('ferr');ne.focus();return;}
@@ -758,7 +761,20 @@ async function saveTask(eid){
     done:prev?prev.done:false,_ord:prev?prev._ord||null:null,exec:(document.getElementById('iExec')||{}).value||null,date:document.getElementById('iDate').value||null,
     note:(document.getElementById('iNote').value||'').trim()||null,doneAt:prev?prev.doneAt:null};
   if(eid)tasks=tasks.map(x=>x.id===eid?obj:x);else tasks.push(obj);
-  closeOv();render();await dbSetTask(obj);toast(eid?'Задача обновлена':'Задача добавлена');
+  closeOv();render();await dbSetTask(obj);
+  if(!eid&&fromClaim){
+    const c=claims.find(x=>x.id===fromClaim);
+    if(c){
+      const upd={...c,archived:true,result:'task',archiveDt:today(),resComment:'Создана задача: '+name};
+      claims=claims.map(x=>x.id===fromClaim?upd:x);
+      await dbSetClaim(upd);
+    }
+    _taskFromClaim=null;
+    render();
+    toast('Задача добавлена, запись в архиве');
+    return;
+  }
+  toast(eid?'Задача обновлена':'Задача добавлена');
 }
 
 function openProjModal(id){
@@ -1418,10 +1434,12 @@ function openClaimModal(id){
       <div class="f"><label>Тип</label>
         <select id="iQtype">${CLAIM_TYPES.map(t=>`<option value="${t.v}"${c&&c.type===t.v?' selected':''}>${t.lb}</option>`).join('')}</select></div>
       <div class="f"><label>Проект (клиент)</label>
-        <select id="iQproj">
+        <select id="iQproj" onchange="toggleQperson()">
           <option value="">— без проекта —</option>
           ${projs.map(p=>`<option value="${p.id}"${c&&c.p===p.id?' selected':''}>${esc(p.name)}</option>`).join('')}
         </select></div>
+    <div class="f" id="qpersonWrap" style="display:${c&&c.person&&isPhys(c.p)?'block':'none'}"><label>ФИО (физическое лицо)</label>
+      <input type="text" id="iQperson" value="${c?esc(c.person||''):''}" placeholder="Фамилия Имя Отчество..."></div>
     </div>
     <div class="f"><label>Кому направлена <span class="req">*</span></label>
       <input type="text" id="iQto" value="${c?esc(c.to||''):''}" placeholder="Организация / ФИО адресата..."></div>
@@ -1453,6 +1471,7 @@ async function saveClaim(eid){
   const obj={id:eid||genId(),
     type:(document.getElementById('iQtype')||{}).value||'claim',
     p:(document.getElementById('iQproj')||{}).value||null,
+    person:(()=>{const w=document.getElementById('qpersonWrap');return (w&&w.style.display!=='none')?((document.getElementById('iQperson').value||'').trim()||null):null;})(),
     to,essence,sentDt:sent,
     method:(document.getElementById('iQmethod')||{}).value||null,
     answerDt:(document.getElementById('iQans')||{}).value||null,
@@ -1505,6 +1524,21 @@ async function unarchiveClaim(id){
 }
 
 async function delClaim(id){claims=claims.filter(x=>x.id!==id);render();await dbDelClaim(id);toast('Запись удалена');}
+
+function isPhys(pid){const pr=getPrj(pid);return !!pr&&pr.name.toLowerCase().includes('физическ');}
+function toggleQperson(){const w=document.getElementById('qpersonWrap');if(w)w.style.display=isPhys((document.getElementById('iQproj')||{}).value)?'block':'none';}
+
+function claimToTask(id){
+  const c=claims.find(x=>x.id===id);if(!c)return;
+  _taskFromClaim=id;
+  const cl=getPrj(c.p);
+  openTaskModal(null,null,{
+    p:c.p,
+    date:c.answerDt||'',
+    name:`${claimType(c.type).lb}: ${c.essence||''}`,
+    note:`${claimType(c.type).lb} от ${fmtD(c.sentDt)}${c.method?' ('+c.method+')':''} адресату: ${c.to||'—'}${c.person?'. Клиент: '+c.person:''}${cl?'. Проект: '+cl.name:''}. Ответ ожидался: ${fmtD(c.answerDt)||'—'}.`
+  });
+}
 
 boot();
 </script>
