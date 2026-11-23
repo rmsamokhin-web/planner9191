@@ -23,7 +23,7 @@
   --green:#1D9E75;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
-.app{max-width:960px;margin:0 auto;padding:1.5rem 1rem 3rem}
+.app{max-width:1440px;margin:0 auto;padding:1.5rem 1rem 3rem}
 .header{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap}
 .logo{font-size:18px;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--purple-dark);margin-right:auto}
 .stats{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -43,7 +43,7 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 .bp{background:var(--purple);color:#fff}.bp:hover{background:var(--purple-dark)}
 .bg2{background:#fff;border:1px solid var(--border);color:var(--text)}.bg2:hover{background:var(--bg)}
 .br{background:#FCEBEB;color:#791F1F;border:1px solid #F7C1C1}.br:hover{background:#F7C1C1}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .court-section{grid-column:1/-1;background:#F4F0FB;border:1px solid #C9C3F0;border-radius:14px;padding:1rem}
 .court-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;padding-bottom:10px;border-bottom:1px solid #C9C3F0}
 .court-title{font-size:12px;font-weight:600;color:#3C3489;display:flex;align-items:center;gap:7px}
@@ -141,7 +141,8 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 .spinner{width:30px;height:30px;border:2.5px solid var(--border);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .errbanner{background:#FCEBEB;border:1px solid #F7C1C1;color:#791F1F;font-size:13px;padding:16px 20px;border-radius:12px;margin:2rem auto;max-width:520px;line-height:1.7}
-@media(max-width:580px){.grid{grid-template-columns:1fr}.frow{grid-template-columns:1fr}.vsw .vb{padding:5px 8px;font-size:11px}.srch{width:100px}}
+@media(max-width:1250px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.frow{grid-template-columns:1fr}.vsw .vb{padding:5px 8px;font-size:11px}.srch{width:100px}}
 
 .card.dragging{opacity:0 !important;pointer-events:none}
 .quadrant.drag-over{outline:2px dashed #534AB7;outline-offset:-3px}
@@ -215,11 +216,13 @@ const PAL=[
   {bg:'#F1EFE8',bd:'#B4B2A9',tx:'#444441'},
 ];
 const QS=[
-  {u:1,i:1,cls:'q1',ic:'🔥',lb:'Важные и срочные',sb:'Сделать сейчас'},
-  {u:0,i:1,cls:'q2',ic:'⭐',lb:'Важные несрочные',sb:'Запланировать'},
-  {u:1,i:0,cls:'q3',ic:'⚡',lb:'Срочные неважные',sb:'Делегировать'},
-  {u:0,i:0,cls:'q4',ic:'📦',lb:'Несрочные неважные',sb:'Отложить'},
+  {key:'cur',cls:'q1',ic:'🔥',lb:'В текущей работе',sb:'Важные и срочные'},
+  {key:'wait',cls:'q2',ic:'⭐',lb:'Задачи в ожидании',sb:'Важные несрочные'},
+  {key:'misc',cls:'q4',ic:'📦',lb:'Прочие',sb:'Срочные неважные и несрочные неважные'}
 ];
+const qKeyOf=t=>t.u&&t.i?'cur':(!t.u&&t.i)?'wait':'misc';
+const inQ=(t,key)=>key==='cur'?(t.u&&t.i):key==='wait'?(!t.u&&t.i):!t.i;
+const setQ=(t,key)=>{if(key==='cur'){t.u=1;t.i=1;}else if(key==='wait'){t.u=0;t.i=1;}else{t.i=0;}};
 const PDOT=[
   {bg:'#F09595',lb:'Важная и срочная'},
   {bg:'#EF9F27',lb:'Важная несрочная'},
@@ -393,12 +396,12 @@ function render(){
   if(view==='matrix'){
     const mdata=_execFilter?data.filter(t=>t.exec===_execFilter||!t.exec||t.exec==='O'):data;
     const qHtml=QS.map(q=>{
-      const it=mdata.filter(t=>t.u===q.u&&t.i===q.i).sort((a,b)=>(a._ord||0)-(b._ord||0));
-      return `<div class="quadrant ${q.cls}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="quadDrop(event,${q.u},${q.i})">
+      const it=mdata.filter(t=>inQ(t,q.key)).sort((a,b)=>(a._ord||0)-(b._ord||0));
+      return `<div class="quadrant ${q.cls}" data-q="${q.key}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="quadDrop(event,'${q.key}')">
         <div class="qh"><div class="qico">${q.ic}</div>
           <div class="qlb"><div class="qt">${q.lb}</div><div class="qs">${q.sb}</div></div>
           <span class="qcnt">${it.length}</span></div>
-        ${it.length?it.map(t=>cH(t,'q')).join(''):'<div class="empty">Нет задач</div>'}
+        ${it.length?it.map(t=>cH(t,'q',q.key)).join(''):'<div class="empty">Нет задач</div>'}
       </div>`;
     }).join('');
     document.getElementById('vm').innerHTML=qHtml;
@@ -585,7 +588,7 @@ function render(){
   }
 }
 
-function cH(t,mode){
+function cH(t,mode,qkey){
   const over=t.date&&t.date<today();
   const dl=t.date?`<span class="dl${over?' dl-over':''}">📅 ${fmtD(t.date)}${over?' — просрочено':''}</span>`:'';
   const note=t.note?`<div class="note-t">📝 ${esc(t.note)}</div>`:'';
@@ -604,7 +607,7 @@ function cH(t,mode){
     </div>`;
     const execCls={I:'exec-I',R:'exec-R',O:'exec-O'}[t.exec]||'exec-q';
     const execLbl={I:'И',R:'Р',O:'Общ.'}[t.exec]||'?';
-    return `<div class="${cls}${t.done?' done':''}" data-id="${t.id}" data-u="${t.u}" data-i="${t.i}" draggable="true" ondragstart="dragStart(event,'${t.id}')" ondragend="dragEnd(event)" ondragover="cardOver(event,'${t.id}',${t.u},${t.i})" ondragleave="cardLeave(event)" style="position:relative;margin-right:22px">
+    return `<div class="${cls}${t.done?' done':''}" data-id="${t.id}" data-u="${t.u}" data-i="${t.i}" data-q="${qkey||qKeyOf(t)}" draggable="true" ondragstart="dragStart(event,'${t.id}')" ondragend="dragEnd(event)" ondragover="cardOver(event,'${t.id}','${qkey||qKeyOf(t)}')" ondragleave="cardLeave(event)" style="position:relative;margin-right:22px">
       ${dotMenu}
       <div style="display:flex;align-items:flex-start;gap:5px">
         <button class="chk${t.done?' on':''}" onclick="togDone('${t.id}')" style="flex-shrink:0;margin-top:2px">${t.done?'✓':''}</button>
@@ -980,15 +983,14 @@ function dotEnter(){
 
 
 /* ── Drag & Drop ── */
-let _dragId=null, _dragOverId=null, _dragBelow=false, _lastHoverTarget=null, _prevSrcU, _prevSrcI;
+let _dragId=null, _dragOverId=null, _dragBelow=false, _lastHoverTarget=null, _prevSrcKey=null;
 
 function dragStart(e,id){
   _dragId=id;
   pausePoll(60000);
   _lastHoverTarget=null;
   const _srcTask=tasks.find(x=>x.id===id);
-  _prevSrcU=_srcTask?_srcTask.u:undefined;
-  _prevSrcI=_srcTask?_srcTask.i:undefined;
+  _prevSrcKey=_srcTask?qKeyOf(_srcTask):null;
   e.dataTransfer.effectAllowed='move';
   e.dataTransfer.setData('text/plain',id);
   setTimeout(()=>{
@@ -1001,6 +1003,7 @@ function dragEnd(e){
   document.querySelectorAll('.card.dragging').forEach(el=>el.classList.remove('dragging'));
   document.querySelectorAll('.quadrant').forEach(q=>q.classList.remove('drag-over'));
   _dragId=null;
+  _prevSrcKey=null;
 }
 
 function dragOver(e){
@@ -1017,86 +1020,61 @@ function dragLeave(e){
     quad.classList.remove('drag-over');
   }
 }
-async function quadDrop(e,u,i){
+async function quadDrop(e,key){
   e.preventDefault();
   if(!_dragId)return;
   const src=tasks.find(x=>x.id===_dragId);
   if(!src)return;
 
-  // cross-quadrant drop
-  const isCrossQuadrant=_prevSrcU!==undefined&&(_prevSrcU!==u||_prevSrcI!==i);
-  if(isCrossQuadrant||src.u!==u||src.i!==i){
-    if(src.u===u&&src.i===i){
-      // cardOver already moved src visually - save both quadrants
-      const toSave=tasks.filter(t=>!t.done&&(
-        (t.u===u&&t.i===i)||(t.u===_prevSrcU&&t.i===_prevSrcI)
-      ));
+  // cross-block drop
+  const isCross=_prevSrcKey!==null&&_prevSrcKey!==key;
+  if(isCross||!inQ(src,key)){
+    if(inQ(src,key)){
+      // cardOver already moved src visually - save both blocks
+      const toSave=tasks.filter(t=>!t.done&&(inQ(t,key)||(_prevSrcKey!==null&&inQ(t,_prevSrcKey))));
       render();
-      console.log('cross-quadrant saving', toSave.length, 'tasks');
-      toSave.forEach(t=>console.log(t.name,'u='+t.u,'i='+t.i,'_ord='+t._ord));
       await Promise.all(toSave.map(t=>fbPut('/tasks/'+t.id,t)));
     } else {
-      // dropped on empty quadrant - cardOver never fired
-      const maxOrd=Math.max(0,...tasks.filter(t=>t.u===u&&t.i===i&&!t.done).map(t=>t._ord||0));
-      src.u=u; src.i=i; src._ord=maxOrd+10;
+      // dropped on empty block - cardOver never fired
+      const maxOrd=Math.max(0,...tasks.filter(t=>inQ(t,key)&&!t.done).map(t=>t._ord||0));
+      setQ(src,key); src._ord=maxOrd+10;
       tasks=tasks.map(x=>x.id===_dragId?src:x);
       render();
-      console.log('empty quadrant drop, saving', src.name, 'u='+u, 'i='+i);
       await dbSetTask(src);
     }
     sdot('ok');
     toast('Задача перемещена');
-    _prevSrcU=undefined;_prevSrcI=undefined;
+    _prevSrcKey=null;
     return;
   }
 
   if(_lastHoverTarget&&_lastHoverTarget!==_dragId){
     const tgt=tasks.find(x=>x.id===_lastHoverTarget);
-    if(tgt&&tgt.u===u&&tgt.i===i){
-    // intra-quadrant reorder
-      // Read final order from DOM
-      const q=QS.find(x=>x.u===u&&x.i===i);
-      if(q){
-        const container=document.querySelector('.quadrant.'+q.cls);
-        if(container){
-          const domCards=container.querySelectorAll('.card[data-id]');
-          console.log('DOM cards:', [...domCards].map(el=>el.dataset.id));
-          // assign _ord based on DOM position, step 20 to leave gaps for hidden tasks
-          domCards.forEach((el,idx)=>{
-            const t=tasks.find(x=>x.id===el.dataset.id);
-            if(t){t._ord=(idx+1)*20;}
-          });
-          // assign _ord to hidden tasks (not in DOM) - place them between visible ones
-          // by keeping their relative order but fitting between DOM items
-          const domIds=new Set([...domCards].map(el=>el.dataset.id));
-          const hiddenTasks=tasks.filter(t=>t.u===u&&t.i===i&&!t.done&&!domIds.has(t.id))
-            .sort((a,b)=>(a._ord||0)-(b._ord||0));
-          // space hidden tasks in odd positions (1,3,5... between even DOM positions)
-          hiddenTasks.forEach((t,idx)=>{t._ord=(idx+1)*20-10;});
-        }
+    if(tgt&&inQ(tgt,key)){
+      // intra-block reorder: read final order from DOM
+      const container=document.querySelector('.quadrant[data-q="'+key+'"]');
+      if(container){
+        const domCards=container.querySelectorAll('.card[data-id]');
+        // assign _ord based on DOM position, step 20 to leave gaps for hidden tasks
+        domCards.forEach((el,idx)=>{
+          const t=tasks.find(x=>x.id===el.dataset.id);
+          if(t){t._ord=(idx+1)*20;}
+        });
+        const domIds=new Set([...domCards].map(el=>el.dataset.id));
+        const hiddenTasks=tasks.filter(t=>inQ(t,key)&&!t.done&&!domIds.has(t.id))
+          .sort((a,b)=>(a._ord||0)-(b._ord||0));
+        // space hidden tasks in odd positions (1,3,5... between even DOM positions)
+        hiddenTasks.forEach((t,idx)=>{t._ord=(idx+1)*20-10;});
       }
-      if(_execFilter) recomputeGlobalOrder(u,i);
-      const toSave=tasks.filter(t=>t.u===u&&t.i===i&&!t.done);
+      if(_execFilter) recomputeGlobalOrder(key);
+      const toSave=tasks.filter(t=>inQ(t,key)&&!t.done);
       render();
-      console.log('Saving:', toSave.map(t=>t.name+'='+t._ord));
       await Promise.all(toSave.map(t=>fbPut('/tasks/'+t.id,t)));
       sdot('ok');
       return;
     }
   }
-
-  // cross-quadrant drop
-  if(src.u===u&&src.i===i)return;
-  const upd={...src,u,i};
-  tasks=tasks.map(x=>x.id===_dragId?upd:x);
-  render();
-  await dbSetTask(upd);
-  toast('Задача перемещена');
-}
-
-async function drop(e,u,i){
-  // kept for compatibility - calls quadDrop
-  return quadDrop(e,u,i);
+  _prevSrcKey=null;
 }
 
 
@@ -1252,7 +1230,7 @@ async function saveRevive(id){
 }
 
 
-function cardOver(e,targetId,u,i){
+function cardOver(e,targetId,key){
   e.preventDefault();
   e.stopPropagation();
   if(!_dragId||targetId===_dragId)return;
@@ -1260,76 +1238,44 @@ function cardOver(e,targetId,u,i){
   const src=tasks.find(x=>x.id===_dragId);
   const tgt=tasks.find(x=>x.id===targetId);
   if(!src||!tgt)return;
+  if(!inQ(tgt,key))return;
   const rect=e.currentTarget.getBoundingClientRect();
   const below=e.clientY>rect.top+rect.height/2;
-  const origU=src.u, origI=src.i;
-  // temporarily move src to target quadrant for live preview
-  src.u=u; src.i=i;
-  let q=tasks.filter(t=>t.u===u&&t.i===i&&!t.done).sort((a,b)=>(a._ord||0)-(b._ord||0));
+  const origKey=qKeyOf(src);
+  // temporarily move src to target block for live preview
+  setQ(src,key);
+  let q=tasks.filter(t=>inQ(t,key)&&!t.done).sort((a,b)=>(a._ord||0)-(b._ord||0));
   q.forEach((t,idx)=>{t._ord=(idx+1)*10;});
   q=q.filter(t=>t.id!==_dragId);
   const tgtIdx=q.findIndex(t=>t.id===targetId);
+  if(tgtIdx===-1)return;
   q.splice(below?tgtIdx+1:tgtIdx,0,src);
   q.forEach((t,idx)=>{const o=tasks.find(x=>x.id===t.id);if(o)o._ord=(idx+1)*10;});
-  if(origU!==u||origI!==i) renderQuadrant(origU,origI);
-  renderQuadrant(u,i);
+  if(origKey!==key) renderQuadrant(origKey);
+  renderQuadrant(key);
 }
 
 function cardLeave(e){}
 
-function renderQuadrant(u,i){
-  const q=QS.find(x=>x.u===u&&x.i===i);
+function renderQuadrant(key){
+  const q=QS.find(x=>x.key===key);
   if(!q)return;
   const allData=filtered();
   const data=_execFilter?allData.filter(t=>t.exec===_execFilter||!t.exec||t.exec==='O'):allData;
-  const it=data.filter(t=>t.u===q.u&&t.i===q.i).sort((a,b)=>(a._ord||0)-(b._ord||0));
-  const container=document.querySelector('.quadrant.'+q.cls);
+  const it=data.filter(t=>inQ(t,key)).sort((a,b)=>(a._ord||0)-(b._ord||0));
+  const container=document.querySelector('.quadrant[data-q="'+key+'"]');
   if(!container)return;
   const header=container.querySelector('.qh');
   const headerHtml=header?header.outerHTML:'';
-  container.innerHTML=headerHtml+(it.length?it.map(t=>cH(t,'q')).join(''):'<div class="empty">Нет задач</div>');
+  container.innerHTML=headerHtml+(it.length?it.map(t=>cH(t,'q',key)).join(''):'<div class="empty">Нет задач</div>');
   if(_dragId){
     container.querySelectorAll('[data-id="'+_dragId+'"]').forEach(el=>el.classList.add('dragging'));
   }
 }
 
-async function cardDrop(e,targetId,u,i){
-  e.preventDefault();
-  e.stopPropagation();
-  if(!_dragId||_dragId===targetId)return;
-  const src=tasks.find(x=>x.id===_dragId);
-  const tgt=tasks.find(x=>x.id===targetId);
-  if(!src||!tgt||src.u!==tgt.u||src.i!==tgt.i)return;
-
-  // Read final visual order from DOM
-  const q=QS.find(x=>x.u===u&&x.i===i);
-  if(q){
-    const container=document.querySelector('.quadrant.'+q.cls);
-    if(container){
-      const domCards=container.querySelectorAll('.card[data-id]');
-      console.log('DOM order:', [...domCards].map(el=>el.dataset.id));
-      domCards.forEach((el,idx)=>{
-        const t=tasks.find(x=>x.id===el.dataset.id);
-        if(t){ t._ord=(idx+1)*10; }
-      });
-    }
-  }
-
-  if(_execFilter){
-    recomputeGlobalOrder(u,i);
-  }
-
-  const toSave=tasks.filter(t=>t.u===u&&t.i===i&&!t.done);
-  render();
-  console.log('Saving to Firebase:', toSave.map(t=>t.name+'='+t._ord));
-  await Promise.all(toSave.map(t=>fbPut('/tasks/'+t.id,t)));
-  sdot('ok');
-  pausePoll(60000);
-}
-
-function recomputeGlobalOrder(u,i){
-  // Get all tasks in this quadrant sorted by current _ord
-  const all=tasks.filter(t=>t.u===u&&t.i===i&&!t.done).sort((a,b)=>(a._ord||0)-(b._ord||0));
+function recomputeGlobalOrder(key){
+  // Get all tasks in this block sorted by current _ord
+  const all=tasks.filter(t=>inQ(t,key)&&!t.done).sort((a,b)=>(a._ord||0)-(b._ord||0));
   // Split into R, I, and other (common/unset)
   const listR=all.filter(t=>t.exec==='R');
   const listI=all.filter(t=>t.exec==='I');
@@ -1394,13 +1340,10 @@ async function setExec(id,exec){
 
 
 async function initOrdIfNeeded(){
-  // Group tasks by quadrant, assign _ord to those missing it
+  // Group tasks by block, assign _ord to those missing it
   const needsSave=[];
-  const quadrants=[
-    {u:1,i:1},{u:0,i:1},{u:1,i:0},{u:0,i:0}
-  ];
-  quadrants.forEach(({u,i})=>{
-    const qt=tasks.filter(t=>t.u===u&&t.i===i&&!t.done);
+  ['cur','wait','misc'].forEach(key=>{
+    const qt=tasks.filter(t=>inQ(t,key)&&!t.done);
     // find max existing _ord
     const hasOrd=qt.filter(t=>t._ord);
     const noOrd=qt.filter(t=>!t._ord);
