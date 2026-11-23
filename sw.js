@@ -1,4 +1,4 @@
-const CACHE = 'planner-v3';
+const CACHE = 'planner-v4';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -20,16 +20,19 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // Same-origin static assets: cache-first, then network (and cache the result)
+  // Same-origin static assets: stale-while-revalidate (instant + self-updating)
   if (url.origin === self.location.origin) {
     e.respondWith(
-      caches.match(req).then(hit => hit || fetch(req).then(res => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(req, clone));
-        }
-        return res;
-      }))
+      caches.match(req).then(cached => {
+        const network = fetch(req).then(res => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE).then(c => c.put(req, clone));
+          }
+          return res;
+        }).catch(() => cached);
+        return cached || network;
+      })
     );
     return;
   }
