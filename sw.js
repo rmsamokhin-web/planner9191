@@ -1,5 +1,5 @@
-const CACHE = 'planner-v1';
-const CORE = ['./', './index.html', './manifest.json', './icon.svg'];
+const CACHE = 'planner-v2';
+const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
