@@ -328,6 +328,26 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 .plan-day{border:1px solid var(--border);border-radius:10px;padding:9px 12px;background:var(--input-bg)}
 .plan-day-h{font-size:12px;font-weight:600;color:var(--purple-text);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em}
 .plan-item{font-size:12px;padding:2px 0;color:var(--text);line-height:1.45;word-break:break-word}
+.plan-h{float:right;font-size:11px;color:var(--text-3);font-weight:600;padding-left:6px}
+.plan-day.over{border-color:var(--court-over)}
+.plan-day.over .plan-day-h{color:var(--court-over)}
+
+/* ── Plan PDF (print) ── */
+#printArea{display:none}
+@media print{
+  body>*{display:none !important}
+  #printArea{display:block !important;color:#111;font-family:Arial,sans-serif}
+  @page{size:A4 landscape;margin:10mm}
+  .pa-title{font-size:16pt;font-weight:700}
+  .pa-sub{font-size:9pt;color:#444;margin-top:1mm}
+  .pa-week{display:grid;grid-template-columns:repeat(5,1fr);gap:4mm;margin-top:5mm}
+  .pa-day{border:0.4pt solid #888;border-radius:2mm;padding:2.5mm;min-height:115mm;vertical-align:top}
+  .pa-day.over{background:#fdeaea;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pa-day-h{font-size:8.5pt;font-weight:700;border-bottom:0.4pt solid #aaa;padding-bottom:1mm;margin-bottom:1.5mm;display:flex;justify-content:space-between;text-transform:uppercase}
+  .pa-it{font-size:8pt;line-height:1.35;padding:0.8mm 0;clear:both}
+  .pa-h{float:right;font-weight:600;color:#555;padding-left:1.5mm}
+  .pa-foot{margin-top:4mm;font-size:8pt;color:#555;display:flex;justify-content:space-between}
+}
 
 /* ── Layouts ── */
 #snavw{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:1.1rem}
@@ -1721,6 +1741,14 @@ function claimToTask(id){
 
 /* ── Weekly plan ── */
 const WD=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+const PLAN_DAY_CAP=6;
+const PLAN_HOURS={court:4,prep:3,task:2};
+const PLAN_KW=[['иск',4],['жалоб',3],['претенз',3],['договор',3],['заявлен',2],['ходатайств',2],['запрос',1.5],['письмо',1],['позвон',0.5],['звон',0.5]];
+function taskHours(t){
+  const n=(t.name||'').toLowerCase();
+  for(const[kw,h]of PLAN_KW)if(n.includes(kw))return h;
+  return PLAN_HOURS.task;
+}
 function weekDays(){
   const out=[];const d=new Date();d.setHours(0,0,0,0);
   if(d.getDay()===6)d.setDate(d.getDate()+2);
@@ -1809,22 +1837,26 @@ function planDragOver(e,id){
 }
 function planDragEnd(){_planDrag=null;}
 function buildPlan(taskIds,days,exec){
-  const dayMap={};days.forEach(d=>dayMap[d]={courts:[],prep:[],tasks:[]});
+  const dayMap={};days.forEach(d=>dayMap[d]={courts:[],prep:[],tasks:[],used:0,over:false});
   const wkCourts=[...courts].filter(c=>!c.finished&&c.dt&&c.dt<=days[days.length-1]&&(!exec||c.exec===exec||!c.exec||c.exec==='O'))
     .sort((a,b)=>(a.dt||'').localeCompare(b.dt||'')||((a.tm||'').localeCompare(b.tm||'')));
   wkCourts.forEach(c=>{
     const key=c.dt>=days[0]?c.dt:days[0];
-    if(dayMap[key])dayMap[key].courts.push(c);
+    if(dayMap[key]){dayMap[key].courts.push(c);dayMap[key].used+=PLAN_HOURS.court;}
     let prepKey=dPlus(c.dt,-1);
     if(prepKey<days[0])prepKey=days[0];
     while(prepKey>days[0]&&!dayMap[prepKey])prepKey=dPlus(prepKey,-1);
-    if(dayMap[prepKey])dayMap[prepKey].prep.push(c);
+    if(dayMap[prepKey]){dayMap[prepKey].prep.push(c);dayMap[prepKey].used+=PLAN_HOURS.prep;}
   });
+  days.forEach(d=>{if(dayMap[d].used>PLAN_DAY_CAP)dayMap[d].over=true;});
   const sel=taskIds.map(id=>tasks.find(t=>t.id===id)).filter(Boolean);
-  const n=days.length;
-  sel.forEach((t,i)=>{
-    const idx=Math.min(n-1,Math.floor(i*n/Math.max(1,sel.length)));
-    dayMap[days[idx]].tasks.push(t);
+  sel.forEach(t=>{
+    const h=taskHours(t);
+    let target=null;
+    for(const d of days){if(dayMap[d].used+h<=PLAN_DAY_CAP){target=d;break;}}
+    if(!target){target=days.reduce((a,b)=>dayMap[a].used<=dayMap[b].used?a:b);dayMap[target].over=true;}
+    dayMap[target].tasks.push({t,h});
+    dayMap[target].used+=h;
   });
   return {days,dayMap};
 }
@@ -1844,23 +1876,24 @@ function renderPlanResult(plan){
     const rows=[
       ...dm.courts.map(c=>{
         const over=c.dt<plan.days[0];
-        return `<div class="plan-item">⚖️ <span class="${over?'dl-over':''}" style="font-weight:600">${over?'⚠ ':''}${fmtD(c.dt)}${c.tm?' '+esc(c.tm):''}</span> <b>${esc(c.court||'')}</b>${c.client?' — '+esc(c.client):''}${c.desc?': '+esc(c.desc):''}</div>`;
+        return `<div class="plan-item">⚖️ <span class="${over?'dl-over':''}" style="font-weight:600">${over?'⚠ ':''}${fmtD(c.dt)}${c.tm?' '+esc(c.tm):''}</span> <b>${esc(c.court||'')}</b>${c.client?' — '+esc(c.client):''}${c.desc?': '+esc(c.desc):''}<span class="plan-h">${PLAN_HOURS.court} ч</span></div>`;
       }),
-      ...dm.prep.map(c=>`<div class="plan-item">🎯 Подготовка к заседанию: <b>${esc(c.court||'')}</b>${c.client?' — '+esc(c.client):''}${c.desc?': '+esc(c.desc):''} <span style="color:var(--text-3)">(заседание ${fmtD(c.dt)}${c.tm?' '+esc(c.tm):''})</span></div>`),
-      ...dm.tasks.map(t=>`<div class="plan-item">• ${esc(t.name)}${t.date?` <span class="dl${t.date<today()?' dl-over':''}">(${fmtD(t.date)})</span>`:''}</div>`)
+      ...dm.prep.map(c=>`<div class="plan-item">🎯 Подготовка к заседанию: <b>${esc(c.court||'')}</b>${c.client?' — '+esc(c.client):''}${c.desc?': '+esc(c.desc):''} <span style="color:var(--text-3)">(заседание ${fmtD(c.dt)}${c.tm?' '+esc(c.tm):''})</span><span class="plan-h">${PLAN_HOURS.prep} ч</span></div>`),
+      ...dm.tasks.map(x=>`<div class="plan-item">• ${esc(x.t.name)}${x.t.date?` <span class="dl${x.t.date<today()?' dl-over':''}">(${fmtD(x.t.date)})</span>`:''}<span class="plan-h">${x.h} ч</span></div>`)
     ].join('');
-    return `<div class="plan-day">
-      <div class="plan-day-h">${WD[new Date(d+'T00:00:00').getDay()]} · ${fmtD(d)}</div>
+    return `<div class="plan-day${dm.over?' over':''}">
+      <div class="plan-day-h">${WD[new Date(d+'T00:00:00').getDay()]} · ${fmtD(d)} · ${dm.used} ч</div>
       ${rows||'<div class="plan-item" style="color:var(--text-3)">— свободный день —</div>'}
     </div>`;
   }).join('');
   document.getElementById('modal').innerHTML=`
     <div class="mhd"><h2>📅 План на неделю</h2>
       <button class="cls" onclick="closeOv()">×</button></div>
-    <div style="font-size:12px;color:var(--text-2);margin-bottom:10px">${_planExec?('Для: <b>'+({R:'Руслан',I:'Ильнур'}[_planExec]||_planExec)+'</b> · '):''}${fmtD(plan.days[0])} – ${fmtD(plan.days[plan.days.length-1])}</div>
+    <div style="font-size:12px;color:var(--text-2);margin-bottom:10px">${_planExec?('Для: <b>'+({R:'Руслан',I:'Ильнур'}[_planExec]||_planExec)+'</b> · '):''}${fmtD(plan.days[0])} – ${fmtD(plan.days[plan.days.length-1])} · норма до ${PLAN_DAY_CAP} ч/день</div>
     <div class="plan-grid">${html}</div>
     <div class="mbtns">
       <button class="btn bg2" onclick="copyPlan()">📋 Копировать</button>
+      <button class="btn bg2" onclick="printPlan()">🖨️ PDF</button>
       <button class="btn bp" onclick="closeOv()">Готово</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
@@ -1870,14 +1903,43 @@ function copyPlan(){
   const lines=[`План на неделю${_planExec?' ('+({R:'Руслан',I:'Ильнур'}[_planExec]||_planExec)+')':''}: ${fmtD(plan.days[0])} – ${fmtD(plan.days[plan.days.length-1])}`];
   plan.days.forEach(d=>{
     const dm=plan.dayMap[d];
-    lines.push(WD[new Date(d+'T00:00:00').getDay()]+' '+fmtD(d));
-    dm.courts.forEach(c=>lines.push(`⚖ ${fmtD(c.dt)}${c.tm?' '+c.tm:''} ${c.court||''}${c.client?' — '+c.client:''}${c.desc?': '+c.desc:''}`));
-    dm.prep.forEach(c=>lines.push(`🎯 Подготовка: ${c.court||''}${c.client?' — '+c.client:''}${c.desc?': '+c.desc:''} (заседание ${fmtD(c.dt)}${c.tm?' '+c.tm:''})`));
-    dm.tasks.forEach(t=>lines.push(`• ${t.name}${t.date?` (${fmtD(t.date)})`:''}`));
+    lines.push(`${WD[new Date(d+'T00:00:00').getDay()]} ${fmtD(d)} — ${dm.used} ч`);
+    dm.courts.forEach(c=>lines.push(`⚖ ${fmtD(c.dt)}${c.tm?' '+c.tm:''} ${c.court||''}${c.client?' — '+c.client:''}${c.desc?': '+c.desc:''} (${PLAN_HOURS.court} ч)`));
+    dm.prep.forEach(c=>lines.push(`🎯 Подготовка: ${c.court||''}${c.client?' — '+c.client:''}${c.desc?': '+c.desc:''} (заседание ${fmtD(c.dt)}${c.tm?' '+c.tm:''}) (${PLAN_HOURS.prep} ч)`));
+    dm.tasks.forEach(x=>lines.push(`• ${x.t.name}${x.t.date?` (${fmtD(x.t.date)})`:''} (${x.h} ч)`));
   });
   const txt=lines.join('\n');
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>toast('План скопирован')).catch(()=>fallbackCopy(txt));
   else fallbackCopy(txt);
+}
+function printPlan(){
+  const plan=_lastPlan;if(!plan)return;
+  let area=document.getElementById('printArea');
+  if(!area){area=document.createElement('div');area.id='printArea';document.body.appendChild(area);}
+  area.innerHTML=planPrintHtml(plan);
+  setTimeout(()=>window.print(),60);
+}
+function planPrintHtml(plan){
+  const ex=_planExec?' — '+({R:'Руслан',I:'Ильнур'}[_planExec]||_planExec):'';
+  const total=plan.days.reduce((s,d)=>s+plan.dayMap[d].used,0);
+  const daysHtml=plan.days.map(d=>{
+    const dm=plan.dayMap[d];
+    const rows=[
+      ...dm.courts.map(c=>`<div class="pa-it"><b>${fmtD(c.dt)}${c.tm?' '+esc(c.tm):''}</b> ⚖ ${esc(c.court||'')}${c.client?', '+esc(c.client):''}${c.desc?': '+esc(c.desc):''}<span class="pa-h">${PLAN_HOURS.court} ч</span></div>`),
+      ...dm.prep.map(c=>`<div class="pa-it">🎯 Подготовка: ${esc(c.court||'')}${c.client?', '+esc(c.client):''} <i>(${fmtD(c.dt)}${c.tm?' '+esc(c.tm):''})</i><span class="pa-h">${PLAN_HOURS.prep} ч</span></div>`),
+      ...dm.tasks.map(x=>`<div class="pa-it">• ${esc(x.t.name)}<span class="pa-h">${x.h} ч</span></div>`)
+    ].join('');
+    return `<div class="pa-day${dm.used>PLAN_DAY_CAP?' over':''}">
+      <div class="pa-day-h"><span>${WD[new Date(d+'T00:00:00').getDay()]} ${fmtD(d)}</span><span>${dm.used} ч</span></div>
+      ${rows||'<div class="pa-it" style="color:#999">— свободный день —</div>'}
+    </div>`;
+  }).join('');
+  return `<div class="pa">
+    <div class="pa-title">План на неделю${ex}</div>
+    <div class="pa-sub">${fmtD(plan.days[0])} – ${fmtD(plan.days[plan.days.length-1])} · всего ${total} ч</div>
+    <div class="pa-week">${daysHtml}</div>
+    <div class="pa-foot"><span>Норма загрузки: до ${PLAN_DAY_CAP} ч/день</span><span>Сформировано: ${fmtD(today())}</span></div>
+  </div>`;
 }
 function fallbackCopy(txt){
   const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
