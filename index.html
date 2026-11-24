@@ -29,6 +29,7 @@
   --claim-bg:#EFF6FF;--claim-bd:#B5D4F4;--claim-tx:#0C447C;
   --sh:none;
   --snav-bg:transparent;
+  --court-over:#A32D2D;--court-week:#0F6E56;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
 .app{max-width:1440px;margin:0 auto;padding:1.5rem 1rem 3rem}
@@ -241,6 +242,7 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
   --court-bg:#F5F3FF;--court-bd:#DDD6FE;--court-tx:#5B21B6;
   --claim-bg:#F0F7FF;--claim-bd:#C7DDFB;--claim-tx:#1D4ED8;
   --snav-bg:#FAFBFE;
+  --court-over:#DC2626;--court-week:#059669;
   --overlay:rgba(17,24,39,.4);
   --sh:0 1px 2px rgba(17,24,39,.05),0 8px 24px rgba(17,24,39,.06);
 }
@@ -279,6 +281,7 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
   --court-bg:#1B1636;--court-bd:#4A3E8C;--court-tx:#CBC2FF;
   --claim-bg:#0D1622;--claim-bd:#2C537E;--claim-tx:#7FB8F5;
   --snav-bg:#0A0D15;
+  --court-over:#FF6B74;--court-week:#34D399;
   --overlay:rgba(2,3,8,.72);
   --sh:0 1px 3px rgba(0,0,0,.5),0 10px 30px rgba(0,0,0,.3);
 }
@@ -1025,11 +1028,11 @@ function courtDateColor(dt){
   const now=new Date(); now.setHours(0,0,0,0);
   const d=new Date(dt); d.setHours(0,0,0,0);
   const diff=(d-now)/(1000*60*60*24);
-  if(diff<0)return'#A32D2D';
+  if(diff<0)return'var(--court-over)';
   const dayOfWeek=now.getDay();
   const daysToSunday=dayOfWeek===0?0:7-dayOfWeek;
   const endOfWeek=new Date(now); endOfWeek.setDate(now.getDate()+daysToSunday);
-  if(d<=endOfWeek)return'#0F6E56';
+  if(d<=endOfWeek)return'var(--court-week)';
   return'var(--text)';
 }
 
@@ -1045,7 +1048,7 @@ function courtCardH(c){
       <span style="color:var(--text-2);flex:1">${esc(h.reason||'—')}</span>
     </div>`).join(''):'<div style="font-size:12px;color:var(--text-3);padding:6px 0">Нет записей</div>'}
   </div>`;
-  return `<div class="court-card">
+  return `<div class="court-card"${isPast?' style="border-color:var(--court-over)"':''}>
     <div style="display:flex;align-items:center;gap:0">
       <span style="flex-shrink:0;width:110px;font-size:16px;font-weight:700;color:${dateColor};letter-spacing:.01em">${p}</span>
       <span style="flex-shrink:0;width:72px;font-size:16px;font-weight:700;color:var(--purple)">${esc(c.tm||'')}</span>
