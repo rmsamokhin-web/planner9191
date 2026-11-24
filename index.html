@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Планировщик">
-<script>try{var __t=localStorage.getItem('planer-theme');if(__t&&__t!=='classic')document.documentElement.setAttribute('data-theme',__t);var __l=localStorage.getItem('planer-layout');if(__l==='side')document.documentElement.setAttribute('data-layout','side');}catch(e){}</script>
+<script>try{var __t=localStorage.getItem('planer-theme');if(__t&&__t!=='classic')document.documentElement.setAttribute('data-theme',__t);var __l=localStorage.getItem('planer-layout');if(__l!=='top')document.documentElement.setAttribute('data-layout','side');}catch(e){}</script>
 <link rel="manifest" href="manifest.json">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -447,7 +447,7 @@ function applyTheme(t){
   document.querySelectorAll('.th-dot').forEach(d=>d.classList.toggle('sel',d.classList.contains(map[t])));
 }
 function setTheme(t){applyTheme(t);render();}
-let _layout=(()=>{try{return localStorage.getItem('planer-layout')||'top';}catch{return 'top';}})();
+let _layout=(()=>{try{return localStorage.getItem('planer-layout')||'side';}catch{return 'side';}})();
 function applyLayout(l){
   _layout=l;
   if(l==='side')document.documentElement.setAttribute('data-layout','side');
