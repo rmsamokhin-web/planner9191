@@ -1066,8 +1066,8 @@ function courtCardH(c){
         style="flex:1;min-width:120px;font-size:12px;padding:4px 8px;border-radius:7px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit"
         onkeydown="if(event.key==='Enter')saveCourtComment('${c.id}')">
       <button class="btn bg2" style="font-size:11px;padding:4px 9px" onclick="saveCourtComment('${c.id}')">✓</button>
-      <button class="btn bg2" style="font-size:11px;padding:4px 9px;white-space:nowrap${isPast?';border-color:#EF9F27;color:#633806':''}" onclick="openPostponeModal('${c.id}')">↷ Отложить</button>
-      <button class="btn bg2" style="font-size:11px;padding:4px 9px;white-space:nowrap${isPast?';border-color:#EF9F27;color:#633806':''}" onclick="openFinishModal('${c.id}')">✓ Завершить</button>
+      <button class="btn bg2" style="font-size:11px;padding:4px 9px;white-space:nowrap" onclick="openPostponeModal('${c.id}')">↷ Отложить</button>
+      <button class="btn bg2" style="font-size:11px;padding:4px 9px;white-space:nowrap" onclick="openFinishModal('${c.id}')">✓ Завершить</button>
       <button class="btn bg2" style="font-size:11px;padding:4px 9px;white-space:nowrap" id="histbtn_${c.id}" onclick="toggleHist('${c.id}')">▸ История${hist.length?' ('+hist.length+')':''}</button>
     </div>
     ${histHtml}
