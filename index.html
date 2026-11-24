@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Планировщик">
-<script>try{var __t=localStorage.getItem('planer-theme');if(__t&&__t!=='classic')document.documentElement.setAttribute('data-theme',__t);}catch(e){}</script>
+<script>try{var __t=localStorage.getItem('planer-theme');if(__t&&__t!=='classic')document.documentElement.setAttribute('data-theme',__t);var __l=localStorage.getItem('planer-layout');if(__l==='side')document.documentElement.setAttribute('data-layout','side');}catch(e){}</script>
 <link rel="manifest" href="manifest.json">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -313,6 +313,37 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 [data-theme="dark"] .claim-table tbody tr:hover,[data-theme="dark"] .lcard:hover,[data-theme="dark"] .dcard:hover{background:rgba(255,255,255,.03)}
 [data-theme="dark"] .cl-badge{background:rgba(255,255,255,.06);color:var(--text-2)}
 [data-theme="dark"] .court-badge{background:var(--purple-light);color:var(--purple-text)}
+
+/* ── Layouts ── */
+#snavw{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:1.1rem}
+#snavw .logo{margin-right:6px}
+#snavw .stats{margin-left:auto}
+.hdr-sw{display:flex;gap:10px;align-items:center;margin-left:10px}
+.nv-ic{display:none}
+.lay-sw{width:26px;height:26px;border-radius:8px;border:1px solid var(--border);background:var(--card-bg);color:var(--text-2);cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0}
+.lay-sw:hover{color:var(--text);border-color:var(--purple-mid)}
+.mainw{min-width:0}
+
+[data-layout="side"] .app{display:flex;gap:22px;align-items:flex-start}
+[data-layout="side"] #snavw{flex-direction:column;align-items:stretch;width:212px;flex-shrink:0;margin-bottom:0;gap:6px;position:sticky;top:1.25rem;max-height:calc(100vh - 2.5rem)}
+[data-layout="side"] #snavw .logo{margin:0 0 10px}
+[data-layout="side"] .vsw{flex-direction:column;align-items:stretch;background:transparent;padding:0;gap:3px}
+[data-layout="side"] .vsw .vb{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 12px;border-radius:10px;font-size:13px}
+[data-layout="side"] .vsw .vb.on{background:var(--purple-light);color:var(--purple-text);box-shadow:none}
+[data-layout="side"] .nv-ic{display:inline-flex;width:20px;justify-content:center;flex-shrink:0}
+[data-layout="side"] #snavw .stats{margin-top:auto;margin-left:0;padding-top:12px}
+[data-layout="side"] .hdr-sw{margin:8px 0 0}
+[data-layout="side"] .mainw{flex:1}
+@media(max-width:820px){
+  [data-layout="side"] .app{flex-direction:column}
+  [data-layout="side"] #snavw{width:100%;position:static;max-height:none;flex-direction:row;flex-wrap:wrap;align-items:center}
+  [data-layout="side"] #snavw .logo{margin:0 6px 0 0}
+  [data-layout="side"] .vsw{flex-direction:row;flex-wrap:wrap;background:var(--purple-light);padding:3px;gap:2px}
+  [data-layout="side"] .vsw .vb{padding:5px 10px}
+  [data-layout="side"] .nv-ic{display:none}
+  [data-layout="side"] #snavw .stats{margin-top:0;margin-left:auto;padding-top:0}
+  [data-layout="side"] .hdr-sw{margin-left:10px}
+}
 </style>
 </head>
 <body>
@@ -380,6 +411,15 @@ function applyTheme(t){
   document.querySelectorAll('.th-dot').forEach(d=>d.classList.toggle('sel',d.classList.contains(map[t])));
 }
 function setTheme(t){applyTheme(t);render();}
+let _layout=(()=>{try{return localStorage.getItem('planer-layout')||'top';}catch{return 'top';}})();
+function applyLayout(l){
+  _layout=l;
+  if(l==='side')document.documentElement.setAttribute('data-layout','side');
+  else document.documentElement.removeAttribute('data-layout');
+  try{localStorage.setItem('planer-layout',l);}catch{}
+  const b=document.getElementById('laySw');if(b)b.textContent=l==='side'?'⬓':'◧';
+}
+function toggleLayout(){applyLayout(_layout==='side'?'top':'side');}
 
 const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
@@ -450,43 +490,49 @@ async function boot(){
 function mountApp(){
   document.getElementById('root').innerHTML=`
   <div class="app">
-    <div class="header">
+    <aside id="snavw">
       <div class="logo">
         <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
         Планировщик
       </div>
+      <div class="vsw" id="vsw">
+        <button class="vb on" onclick="sw('matrix')"><span class="nv-ic">▦</span>Задачи</button>
+        <button class="vb" onclick="sw('claims')"><span class="nv-ic">📨</span>Претензии/Запросы</button>
+        <button class="vb" onclick="sw('courts')"><span class="nv-ic">⚖️</span>Суды</button>
+        <button class="vb" onclick="sw('list')"><span class="nv-ic">☰</span>Список (по клиентам)</button>
+        <button class="vb" onclick="sw('projects')"><span class="nv-ic">🗂</span>Проекты</button>
+        <button class="vb" onclick="sw('done')"><span class="nv-ic">✓</span>Выполненные</button>
+      </div>
       <div class="stats" id="sbar"></div>
-      <div class="theme-sw" title="Тема оформления">
-        <span class="th-dot th-classic${_theme==='classic'?' sel':''}" onclick="setTheme('classic')" title="Классическая"></span>
-        <span class="th-dot th-light${_theme==='light2'?' sel':''}" onclick="setTheme('light2')" title="Светлая"></span>
-        <span class="th-dot th-dark${_theme==='dark'?' sel':''}" onclick="setTheme('dark')" title="Тёмная"></span>
+      <div class="hdr-sw">
+        <button class="lay-sw" id="laySw" onclick="toggleLayout()" title="Сменить расположение меню">◧</button>
+        <div class="theme-sw" title="Тема оформления">
+          <span class="th-dot th-classic${_theme==='classic'?' sel':''}" onclick="setTheme('classic')" title="Классическая"></span>
+          <span class="th-dot th-light${_theme==='light2'?' sel':''}" onclick="setTheme('light2')" title="Светлая"></span>
+          <span class="th-dot th-dark${_theme==='dark'?' sel':''}" onclick="setTheme('dark')" title="Тёмная"></span>
+        </div>
       </div>
-    </div>
-    <div class="toolbar">
-      <div class="vsw">
-        <button class="vb on" onclick="sw('matrix')">Матрица</button>
-        <button class="vb" onclick="sw('list')">Список (по клиентам)</button>
-        <button class="vb" onclick="sw('claims')">Претензии/Запросы</button>
-        <button class="vb" onclick="sw('courts')">Суды</button>
-        <button class="vb" onclick="sw('projects')">Проекты</button>
-        <button class="vb" onclick="sw('done')">Выполненные</button>
+    </aside>
+    <div class="mainw">
+      <div class="toolbar">
+        <input class="srch" type="text" id="srch" placeholder="Поиск..." oninput="render()">
+        <select class="fsel" id="fProj" onchange="render()"><option value="">Все проекты</option></select>
+        <button class="btn bp" onclick="openTaskModal(null,null)" style="margin-left:auto">+ Задача</button>
       </div>
-      <input class="srch" type="text" id="srch" placeholder="Поиск..." oninput="render()">
-      <select class="fsel" id="fProj" onchange="render()"><option value="">Все проекты</option></select>
-      <button class="btn bp" onclick="openTaskModal(null,null)" style="margin-left:auto">+ Задача</button>
+      <div id="execFilterBtns" style="display:none;gap:8px;margin-bottom:12px">
+        <button class="exec-filter-btn" id="efAll" onclick="toggleExecFilter(null)">Все задачи</button>
+        <button class="exec-filter-btn" id="efR" onclick="toggleExecFilter('R')"><span class="exec-badge exec-R" style="margin-right:5px;vertical-align:middle">Р</span>Задачи Руслана</button>
+        <button class="exec-filter-btn" id="efI" onclick="toggleExecFilter('I')"><span class="exec-badge exec-I" style="margin-right:5px;vertical-align:middle">И</span>Задачи Ильнура</button>
+      </div>
+      <div id="vcl" style="display:none"></div>
+      <div id="vc" style="display:none"></div>
+      <div id="vm" class="grid"></div>
+      <div id="vl" style="display:none"></div>
+      <div id="vp" style="display:none"></div>
+      <div id="vd" style="display:none"></div>
     </div>
-    <div id="execFilterBtns" style="display:none;gap:8px;margin-bottom:12px">
-      <button class="exec-filter-btn" id="efAll" onclick="toggleExecFilter(null)">Все задачи</button>
-      <button class="exec-filter-btn" id="efR" onclick="toggleExecFilter('R')"><span class="exec-badge exec-R" style="margin-right:5px;vertical-align:middle">Р</span>Задачи Руслана</button>
-      <button class="exec-filter-btn" id="efI" onclick="toggleExecFilter('I')"><span class="exec-badge exec-I" style="margin-right:5px;vertical-align:middle">И</span>Задачи Ильнура</button>
-    </div>
-    <div id="vcl" style="display:none"></div>
-    <div id="vc" style="display:none"></div>
-    <div id="vm" class="grid"></div>
-    <div id="vl" style="display:none"></div>
-    <div id="vp" style="display:none"></div>
-    <div id="vd" style="display:none"></div>
   </div>`;
+  applyLayout(_layout);
   document.getElementById('execFilterBtns').style.display='flex';
   render();
 }
@@ -788,7 +834,7 @@ function cH(t,mode,qkey){
 function sw(v){
   view=v;
   if(v!=='matrix'){_execFilter=null;}
-  document.querySelectorAll('.vb').forEach((b,i)=>b.classList.toggle('on',['matrix','list','claims','courts','projects','done'][i]===v));
+  document.querySelectorAll('.vb').forEach((b,i)=>b.classList.toggle('on',['matrix','claims','courts','list','projects','done'][i]===v));
   document.getElementById('vc').style.display=v==='courts'?'block':'none';
   document.getElementById('vcl').style.display=v==='claims'?'block':'none';
   document.getElementById('vm').style.display=v==='matrix'?'grid':'none';
