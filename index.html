@@ -218,14 +218,7 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 .pal5{background:#FBEAF0;border-color:#ED93B1;color:#72243E}
 .pal6{background:#EAF3DE;border-color:#97C459;color:#27500A}
 .pal7{background:#F1EFE8;border-color:#B4B2A9;color:#444441}
-[data-theme="dark"] .pal0{background:transparent;border-color:#7C70D6;color:#C9CDE3}
-[data-theme="dark"] .pal1{background:transparent;border-color:#3E9B7E;color:#C9CDE3}
-[data-theme="dark"] .pal2{background:transparent;border-color:#4E82C4;color:#C9CDE3}
-[data-theme="dark"] .pal3{background:transparent;border-color:#C08A33;color:#C9CDE3}
-[data-theme="dark"] .pal4{background:transparent;border-color:#C56B4E;color:#C9CDE3}
-[data-theme="dark"] .pal5{background:transparent;border-color:#C25C87;color:#C9CDE3}
-[data-theme="dark"] .pal6{background:transparent;border-color:#7FA84E;color:#C9CDE3}
-[data-theme="dark"] .pal7{background:transparent;border-color:#6E7686;color:#C9CDE3}
+[data-theme="dark"] .pal0,[data-theme="dark"] .pal1,[data-theme="dark"] .pal2,[data-theme="dark"] .pal3,[data-theme="dark"] .pal4,[data-theme="dark"] .pal5,[data-theme="dark"] .pal6,[data-theme="dark"] .pal7{background:transparent;border-color:#333C52;color:#C9CDE3}
 
 /* priority dots */
 .pd0{background:#F09595}.pd1{background:#EF9F27}.pd2{background:#85B7EB}.pd3{background:#B4B2A9}
@@ -296,33 +289,29 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 [data-theme="dark"] .card,[data-theme="dark"] .lcard,[data-theme="dark"] .dcard{border-radius:10px}
 [data-theme="dark"] .modal{box-shadow:0 14px 44px rgba(0,0,0,.5)}
 [data-theme="dark"] .toast{background:#7C6CFF;color:#0B0E15}
-[data-theme="dark"] .exec-I{background:#0E2420;color:#5FE3BB}
-[data-theme="dark"] .exec-R{background:#2A1518;color:#FF9B9B}
-[data-theme="dark"] .exec-O{background:#251C0C;color:#F5C26B}
-[data-theme="dark"] .exec-q{background:#161B26;color:#9AA3B8}
+[data-theme="dark"] .exec-I,[data-theme="dark"] .exec-R,[data-theme="dark"] .exec-O,[data-theme="dark"] .exec-q{background:rgba(255,255,255,.06);color:var(--text-2)}
 [data-theme="dark"] .dl-over{color:#FF8585}
 [data-theme="dark"] .due-ok{background:#0E2420;color:#5FE3BB}
 [data-theme="dark"] .due-soon{background:#251C0C;color:#F5C26B}
 [data-theme="dark"] .due-over{background:#2A1518;color:#FF9B9B}
-[data-theme="dark"] .tp-claim{background:#2A1518;color:#FF9B9B}
-[data-theme="dark"] .tp-request{background:#101B2A;color:#8FC1F5}
-[data-theme="dark"] .tp-letter{background:#161B26;color:#A9B2C7}
+[data-theme="dark"] .tp-claim,[data-theme="dark"] .tp-request,[data-theme="dark"] .tp-letter{background:rgba(255,255,255,.06);color:var(--text-2)}
 [data-theme="dark"] .res-ok{background:#0E2420;color:#5FE3BB}
 [data-theme="dark"] .res-none{background:#161B26;color:#A9B2C7}
-[data-theme="dark"] .q1 .card{border-color:#45222A}
-[data-theme="dark"] .q2 .card{border-color:#453517}
-[data-theme="dark"] .q4 .card{border-color:#2A3045}
-[data-theme="dark"] .q1 .card:hover{border-color:#8A4646}
-[data-theme="dark"] .q2 .card:hover{border-color:#8A6B2E}
-[data-theme="dark"] .q4 .card:hover{border-color:#4A5164}
-[data-theme="dark"] .q1 .chk{border-color:#6B3A42}
-[data-theme="dark"] .q2 .chk{border-color:#6B5423}
-[data-theme="dark"] .q1 .qico,[data-theme="dark"] .q1 .qcnt{background:rgba(224,82,96,.16);color:#FF8F9A}
-[data-theme="dark"] .q2 .qico,[data-theme="dark"] .q2 .qcnt{background:rgba(217,160,54,.16);color:#FFCE5E}
-[data-theme="dark"] .q4 .qico,[data-theme="dark"] .q4 .qcnt{background:rgba(122,138,180,.18);color:#A9B2CC}
+[data-theme="dark"] .quadrant{background:#10131B;border-color:#242A3A}
+[data-theme="dark"] .q1{border-left:3px solid #7A3E48}
+[data-theme="dark"] .q2{border-left:3px solid #7A6132}
+[data-theme="dark"] .q4{border-left:3px solid #3E4763}
+[data-theme="dark"] .q1 .qh,[data-theme="dark"] .q2 .qh,[data-theme="dark"] .q4 .qh{border-bottom-color:var(--border)}
+[data-theme="dark"] .q1 .qt,[data-theme="dark"] .q2 .qt,[data-theme="dark"] .q4 .qt{color:var(--text)}
+[data-theme="dark"] .q1 .qs,[data-theme="dark"] .q2 .qs,[data-theme="dark"] .q4 .qs{color:var(--text-3)}
+[data-theme="dark"] .q1 .qico,[data-theme="dark"] .q2 .qico,[data-theme="dark"] .q4 .qico{background:rgba(255,255,255,.05);color:var(--text)}
+[data-theme="dark"] .q1 .qcnt,[data-theme="dark"] .q2 .qcnt,[data-theme="dark"] .q4 .qcnt{background:rgba(255,255,255,.06);color:var(--text-2)}
+[data-theme="dark"] .q1 .card,[data-theme="dark"] .q2 .card,[data-theme="dark"] .q4 .card{border-color:#232838}
+[data-theme="dark"] .q1 .card:hover,[data-theme="dark"] .q2 .card:hover,[data-theme="dark"] .q4 .card:hover{border-color:#3A435C}
+[data-theme="dark"] .q1 .chk,[data-theme="dark"] .q2 .chk{border-color:#2C3346}
 [data-theme="dark"] .dot-btn:hover{background:var(--border-soft)}
 [data-theme="dark"] .claim-table tbody tr:hover,[data-theme="dark"] .lcard:hover,[data-theme="dark"] .dcard:hover{background:rgba(255,255,255,.03)}
-[data-theme="dark"] .cl-badge{background:var(--blue-bg);color:var(--blue-tx)}
+[data-theme="dark"] .cl-badge{background:rgba(255,255,255,.06);color:var(--text-2)}
 [data-theme="dark"] .court-badge{background:var(--purple-light);color:var(--purple-text)}
 </style>
 </head>
