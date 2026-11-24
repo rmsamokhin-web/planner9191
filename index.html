@@ -320,6 +320,15 @@ select.fsel{font-size:13px;height:34px;padding:0 28px 0 10px;border-radius:8px;b
 [data-theme="dark"] .cl-badge{background:rgba(255,255,255,.06);color:var(--text-2)}
 [data-theme="dark"] .court-badge{background:var(--purple-light);color:var(--purple-text)}
 
+/* ── Weekly plan ── */
+.pl-list{max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:6px;background:var(--input-bg)}
+.pl-row{display:flex;align-items:center;gap:8px;padding:6px 9px;background:var(--card-bg);border:1px solid var(--border-soft);border-radius:8px;margin-bottom:4px;cursor:grab;font-size:12px}
+.pl-h{color:var(--text-3);flex-shrink:0;font-size:13px}
+.plan-grid{display:flex;flex-direction:column;gap:10px;max-height:56vh;overflow-y:auto;padding-right:4px}
+.plan-day{border:1px solid var(--border);border-radius:10px;padding:9px 12px;background:var(--input-bg)}
+.plan-day-h{font-size:12px;font-weight:600;color:var(--purple-text);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em}
+.plan-item{font-size:12px;padding:2px 0;color:var(--text);line-height:1.45;word-break:break-word}
+
 /* ── Layouts ── */
 #snavw{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:1.1rem}
 #snavw .logo{margin-right:6px}
@@ -427,6 +436,7 @@ function applyLayout(l){
   const b=document.getElementById('laySw');if(b)b.textContent=l==='side'?'⬓':'◧';
 }
 function toggleLayout(){applyLayout(_layout==='side'?'top':'side');}
+let _planMode='auto', _lastPlan=null, _planDrag=null;
 
 const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
@@ -524,6 +534,7 @@ function mountApp(){
       <div class="toolbar">
         <input class="srch" type="text" id="srch" placeholder="Поиск..." oninput="render()">
         <select class="fsel" id="fProj" onchange="render()"><option value="">Все проекты</option></select>
+        <button class="btn bg2" onclick="openPlanModal()" title="Сформировать план на неделю">📅 План недели</button>
         <button class="btn bp" onclick="openTaskModal(null,null)" style="margin-left:auto">+ Задача</button>
       </div>
       <div id="execFilterBtns" style="display:none;gap:8px;margin-bottom:12px">
@@ -1671,6 +1682,151 @@ function claimToTask(id){
     name:`${claimType(c.type).lb}: ${c.essence||''}`,
     note:`${claimType(c.type).lb} от ${fmtD(c.sentDt)}${c.method?' ('+c.method+')':''} адресату: ${c.to||'—'}${c.person?'. Клиент: '+c.person:''}${cl?'. Проект: '+cl.name:''}. Ответ ожидался: ${fmtD(c.answerDt)||'—'}.`
   });
+}
+
+/* ── Weekly plan ── */
+const WD=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+function weekDays(){
+  const out=[];const d=new Date();d.setHours(0,0,0,0);
+  if(d.getDay()===6)d.setDate(d.getDate()+2);
+  else if(d.getDay()===0)d.setDate(d.getDate()+1);
+  for(let i=0;i<7&&d.getDay()!==6;i++){
+    out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+function planAutoOrder(){
+  const score=t=>{
+    let s=0;
+    if(t.u&&t.i)s-=400;else if(!t.u&&t.i)s-=200;
+    if(t.date){if(t.date<today())s-=150;s+=Math.min(90,Math.max(0,Math.round((new Date(t.date+'T00:00:00')-Date.now())/86400000)));}
+    return s;
+  };
+  return [...tasks].filter(t=>!t.done).sort((a,b)=>score(a)-score(b)||(a._ord||0)-(b._ord||0));
+}
+function openPlanModal(){
+  _planMode='auto';
+  const days=weekDays();
+  const list=planAutoOrder();
+  const wkCnt=[...courts].filter(c=>!c.finished&&c.dt&&c.dt<=days[days.length-1]).length;
+  document.getElementById('modal').innerHTML=`
+    <div class="mhd"><h2>📅 План на неделю</h2>
+      <button class="cls" onclick="closeOv()">×</button></div>
+    <div style="font-size:12px;color:var(--text-2);margin-bottom:12px;line-height:1.5">
+      Период: <b>${fmtD(days[0])} – ${fmtD(days[days.length-1])}</b> · Судов на неделе: <b>${wkCnt}</b> — в свои дни первыми, подготовка к каждому заседанию включена за день до него.</div>
+    <div class="f"><label>Режим</label>
+      <div style="display:flex;gap:8px">
+        <label style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:13px;background:var(--input-bg)"><input type="radio" name="pmode" checked onchange="planMode('auto')">Автоматически</label>
+        <label style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:13px;background:var(--input-bg)"><input type="radio" name="pmode" onchange="planMode('manual')">Вручную</label>
+      </div></div>
+    <div id="planListWrap" style="display:none">
+      <label style="font-size:12px;color:var(--text-2);font-weight:500;display:block;margin-bottom:5px">Задачи: сверху важнее — перетаскивайте мышкой, ✕ — убрать из плана</label>
+      <div class="pl-list" id="planTaskList">
+        ${list.map(t=>`<div class="pl-row" draggable="true" data-pid="${t.id}" ondragstart="planDragStart(event,'${t.id}')" ondragend="planDragEnd()" ondragover="planDragOver(event,'${t.id}')">
+          <span class="pl-h">⠿</span>
+          <span style="flex:1;min-width:0;word-break:break-word">${esc(t.name)}</span>
+          ${t.date?`<span class="dl${t.date<today()?' dl-over':''}" style="flex-shrink:0">📅 ${fmtD(t.date)}</span>`:''}
+          <button class="ic del" onclick="planRemove('${t.id}')" title="Убрать из плана">✕</button>
+        </div>`).join('')||'<div class="empty">Нет активных задач</div>'}
+      </div>
+    </div>
+    <div class="mbtns">
+      <button class="btn bg2" onclick="closeOv()">Отмена</button>
+      <button class="btn bp" onclick="buildPlanFromModal()">Сформировать</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+function planMode(m){_planMode=m;document.getElementById('planListWrap').style.display=m==='manual'?'block':'none';}
+function planRemove(id){const r=document.querySelector('#planTaskList [data-pid="'+id+'"]');if(r)r.remove();}
+function planDragStart(e,id){_planDrag=id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id);}
+function planDragOver(e,id){
+  e.preventDefault();
+  if(!_planDrag||_planDrag===id)return;
+  const list=document.getElementById('planTaskList');
+  const src=list.querySelector('[data-pid="'+_planDrag+'"]');
+  const tgt=list.querySelector('[data-pid="'+id+'"]');
+  if(!src||!tgt)return;
+  const r=tgt.getBoundingClientRect();
+  if(e.clientY<r.top+r.height/2)list.insertBefore(src,tgt);
+  else list.insertBefore(src,tgt.nextSibling);
+}
+function planDragEnd(){_planDrag=null;}
+function buildPlan(taskIds,days){
+  const dayMap={};days.forEach(d=>dayMap[d]={courts:[],prep:[],tasks:[]});
+  const wkCourts=[...courts].filter(c=>!c.finished&&c.dt&&c.dt<=days[days.length-1])
+    .sort((a,b)=>(a.dt||'').localeCompare(b.dt||'')||((a.tm||'').localeCompare(b.tm||'')));
+  wkCourts.forEach(c=>{
+    const key=c.dt>=days[0]?c.dt:days[0];
+    if(dayMap[key])dayMap[key].courts.push(c);
+    let prepKey=dPlus(c.dt,-1);
+    if(prepKey<days[0])prepKey=days[0];
+    while(prepKey>days[0]&&!dayMap[prepKey])prepKey=dPlus(prepKey,-1);
+    if(dayMap[prepKey])dayMap[prepKey].prep.push(c);
+  });
+  const sel=taskIds.map(id=>tasks.find(t=>t.id===id)).filter(Boolean);
+  const n=days.length;
+  sel.forEach((t,i)=>{
+    const idx=Math.min(n-1,Math.floor(i*n/Math.max(1,sel.length)));
+    dayMap[days[idx]].tasks.push(t);
+  });
+  return {days,dayMap};
+}
+function buildPlanFromModal(){
+  let ids;
+  if(_planMode==='manual')ids=[...document.querySelectorAll('#planTaskList .pl-row')].map(r=>r.dataset.pid);
+  else ids=planAutoOrder().map(t=>t.id);
+  const days=weekDays();
+  const plan=buildPlan(ids,days);
+  closeOv();
+  renderPlanResult(plan);
+}
+function renderPlanResult(plan){
+  _lastPlan=plan;
+  const html=plan.days.map(d=>{
+    const dm=plan.dayMap[d];
+    const rows=[
+      ...dm.courts.map(c=>{
+        const over=c.dt<plan.days[0];
+        return `<div class="plan-item">⚖️ <span class="${over?'dl-over':''}" style="font-weight:600">${over?'⚠ ':''}${fmtD(c.dt)}${c.tm?' '+esc(c.tm):''}</span> <b>${esc(c.court||'')}</b>${c.client?' — '+esc(c.client):''}${c.desc?': '+esc(c.desc):''}</div>`;
+      }),
+      ...dm.prep.map(c=>`<div class="plan-item">🎯 Подготовка к заседанию: <b>${esc(c.court||'')}</b>${c.client?' — '+esc(c.client):''}${c.desc?': '+esc(c.desc):''} <span style="color:var(--text-3)">(заседание ${fmtD(c.dt)}${c.tm?' '+esc(c.tm):''})</span></div>`),
+      ...dm.tasks.map(t=>`<div class="plan-item">• ${esc(t.name)}${t.date?` <span class="dl${t.date<today()?' dl-over':''}">(${fmtD(t.date)})</span>`:''}</div>`)
+    ].join('');
+    return `<div class="plan-day">
+      <div class="plan-day-h">${WD[new Date(d+'T00:00:00').getDay()]} · ${fmtD(d)}</div>
+      ${rows||'<div class="plan-item" style="color:var(--text-3)">— свободный день —</div>'}
+    </div>`;
+  }).join('');
+  document.getElementById('modal').innerHTML=`
+    <div class="mhd"><h2>📅 План на неделю</h2>
+      <button class="cls" onclick="closeOv()">×</button></div>
+    <div style="font-size:12px;color:var(--text-2);margin-bottom:10px">${fmtD(plan.days[0])} – ${fmtD(plan.days[plan.days.length-1])}</div>
+    <div class="plan-grid">${html}</div>
+    <div class="mbtns">
+      <button class="btn bg2" onclick="copyPlan()">📋 Копировать</button>
+      <button class="btn bp" onclick="closeOv()">Готово</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+function copyPlan(){
+  const plan=_lastPlan;if(!plan)return;
+  const lines=[];
+  plan.days.forEach(d=>{
+    const dm=plan.dayMap[d];
+    lines.push(WD[new Date(d+'T00:00:00').getDay()]+' '+fmtD(d));
+    dm.courts.forEach(c=>lines.push(`⚖ ${fmtD(c.dt)}${c.tm?' '+c.tm:''} ${c.court||''}${c.client?' — '+c.client:''}${c.desc?': '+c.desc:''}`));
+    dm.prep.forEach(c=>lines.push(`🎯 Подготовка: ${c.court||''}${c.client?' — '+c.client:''}${c.desc?': '+c.desc:''} (заседание ${fmtD(c.dt)}${c.tm?' '+c.tm:''})`));
+    dm.tasks.forEach(t=>lines.push(`• ${t.name}${t.date?` (${fmtD(t.date)})`:''}`));
+  });
+  const txt=lines.join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>toast('План скопирован')).catch(()=>fallbackCopy(txt));
+  else fallbackCopy(txt);
+}
+function fallbackCopy(txt){
+  const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');toast('План скопирован');}catch{toast('Не удалось скопировать');}
+  document.body.removeChild(ta);
 }
 
 boot();
