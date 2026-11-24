@@ -436,7 +436,7 @@ function applyLayout(l){
   const b=document.getElementById('laySw');if(b)b.textContent=l==='side'?'⬓':'◧';
 }
 function toggleLayout(){applyLayout(_layout==='side'?'top':'side');}
-let _planMode='auto', _lastPlan=null, _planDrag=null;
+let _planMode='auto', _lastPlan=null, _planDrag=null, _planExec='';
 
 const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
@@ -1052,6 +1052,8 @@ function courtCardH(c){
   const dateColor=courtDateColor(c.dt);
   const isPast=c.dt&&new Date(c.dt)<new Date(new Date().toDateString());
   const hist=c.history?Object.values(c.history).sort((a,b)=>a.dt.localeCompare(b.dt)):[];
+  const execCls={I:'exec-I',R:'exec-R',O:'exec-O'}[c.exec]||'exec-q';
+  const execLbl={I:'И',R:'Р',O:'Общ.'}[c.exec]||'?';
   const histHtml=`<div id="hist_${c.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-soft)">
     <div style="font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">История рассмотрений</div>
     ${hist.length?hist.map(h=>`<div style="display:flex;gap:10px;padding:5px 0;border-bottom:0.5px solid var(--border-soft);font-size:12px">
@@ -1077,6 +1079,15 @@ function courtCardH(c){
         style="flex:1;min-width:120px;font-size:12px;padding:4px 8px;border-radius:7px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit"
         onkeydown="if(event.key==='Enter')saveCourtComment('${c.id}')">
       <button class="btn bg2" style="font-size:11px;padding:4px 9px" onclick="saveCourtComment('${c.id}')">✓</button>
+      <div style="position:relative;flex-shrink:0">
+        <span class="exec-badge ${execCls}" onclick="toggleCourtExecMenu(event,'cemenu_${c.id}')" title="Исполнитель по суду">${execLbl}</span>
+        <div class="exec-menu" id="cemenu_${c.id}" style="display:none">
+          <div class="exec-menu-item" onclick="setCourtExec('${c.id}','I');closeExecMenus()"><span class="exec-badge exec-I">И</span> Ильнур</div>
+          <div class="exec-menu-item" onclick="setCourtExec('${c.id}','R');closeExecMenus()"><span class="exec-badge exec-R">Р</span> Руслан</div>
+          <div class="exec-menu-item" onclick="setCourtExec('${c.id}','O');closeExecMenus()"><span class="exec-badge exec-O">Общ.</span> Общая</div>
+          <div class="exec-menu-item" onclick="setCourtExec('${c.id}',null);closeExecMenus()"><span class="exec-badge exec-q">?</span> Не назначен</div>
+        </div>
+      </div>
       <button class="btn bg2" style="font-size:11px;padding:4px 9px;white-space:nowrap" onclick="openPostponeModal('${c.id}')">↷ Отложить</button>
       <button class="btn bg2" style="font-size:11px;padding:4px 9px;white-space:nowrap" onclick="openFinishModal('${c.id}')">✓ Завершить</button>
       <button class="btn bg2" style="font-size:11px;padding:4px 9px;white-space:nowrap" id="histbtn_${c.id}" onclick="toggleHist('${c.id}')">▸ История${hist.length?' ('+hist.length+')':''}</button>
@@ -1299,6 +1310,13 @@ function openCourtModal(id){
       <input type="text" id="iCcourt" value="${courtVal}" placeholder="Название суда..."></div>
     <div class="f"><label>Клиент</label>
       <input type="text" id="iCclient" value="${c&&c.client?esc(c.client):''}" placeholder="Имя клиента..."></div>
+    <div class="f"><label>Исполнитель</label>
+      <select id="iCexec">
+        <option value="">? Не назначен</option>
+        <option value="I"${c&&c.exec==='I'?' selected':''}>И — Ильнур</option>
+        <option value="R"${c&&c.exec==='R'?' selected':''}>Р — Руслан</option>
+        <option value="O"${c&&c.exec==='O'?' selected':''}>Общ. — Общая</option>
+      </select></div>
     <div class="f"><label>Описание</label>
       <textarea id="iCdesc" placeholder="Суть дела, номер дела...">${descVal}</textarea></div>
     <div class="mbtns">
@@ -1321,11 +1339,28 @@ async function saveCourt(eid){
     tm:(document.getElementById('iCtm').value||'').trim()||null,
     court,
     client:(document.getElementById('iCclient').value||'').trim()||null,
+    exec:(document.getElementById('iCexec')||{}).value||null,
     desc:(document.getElementById('iCdesc').value||'').trim()||null,
     comment:prev?prev.comment||null:null
   };
   if(eid)courts=courts.map(x=>x.id===eid?obj:x);else courts.push(obj);
   closeOv();render();await dbSetCourt(obj);toast(eid?'Заседание обновлено':'Заседание добавлено');
+}
+
+function toggleCourtExecMenu(e,id){
+  e.stopPropagation();
+  const m=document.getElementById('cemenu_'+id);
+  if(!m)return;
+  const isOpen=m.style.display==='block';
+  closeExecMenus();
+  if(!isOpen)m.style.display='block';
+}
+
+async function setCourtExec(id,exec){
+  const c=courts.find(x=>x.id===id);if(!c)return;
+  const upd={...c,exec:exec||null};
+  courts=courts.map(x=>x.id===id?upd:x);
+  render();await dbSetCourt(upd);toast(exec?'Исполнитель назначен':'Исполнитель снят');
 }
 
 
@@ -1696,46 +1731,67 @@ function weekDays(){
   }
   return out;
 }
-function planAutoOrder(){
+function planAutoOrder(exec){
   const score=t=>{
     let s=0;
     if(t.u&&t.i)s-=400;else if(!t.u&&t.i)s-=200;
     if(t.date){if(t.date<today())s-=150;s+=Math.min(90,Math.max(0,Math.round((new Date(t.date+'T00:00:00')-Date.now())/86400000)));}
     return s;
   };
-  return [...tasks].filter(t=>!t.done).sort((a,b)=>score(a)-score(b)||(a._ord||0)-(b._ord||0));
+  return [...tasks].filter(t=>!t.done&&(!exec||t.exec===exec||!t.exec||t.exec==='O')).sort((a,b)=>score(a)-score(b)||(a._ord||0)-(b._ord||0));
 }
 function openPlanModal(){
-  _planMode='auto';
+  _planMode='auto';_planExec='';
   const days=weekDays();
-  const list=planAutoOrder();
-  const wkCnt=[...courts].filter(c=>!c.finished&&c.dt&&c.dt<=days[days.length-1]).length;
   document.getElementById('modal').innerHTML=`
     <div class="mhd"><h2>📅 План на неделю</h2>
       <button class="cls" onclick="closeOv()">×</button></div>
-    <div style="font-size:12px;color:var(--text-2);margin-bottom:12px;line-height:1.5">
-      Период: <b>${fmtD(days[0])} – ${fmtD(days[days.length-1])}</b> · Судов на неделе: <b>${wkCnt}</b> — в свои дни первыми, подготовка к каждому заседанию включена за день до него.</div>
-    <div class="f"><label>Режим</label>
-      <div style="display:flex;gap:8px">
-        <label style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:13px;background:var(--input-bg)"><input type="radio" name="pmode" checked onchange="planMode('auto')">Автоматически</label>
-        <label style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:13px;background:var(--input-bg)"><input type="radio" name="pmode" onchange="planMode('manual')">Вручную</label>
-      </div></div>
+    <div id="planInfo" style="font-size:12px;color:var(--text-2);margin-bottom:12px;line-height:1.5"></div>
+    <div class="frow">
+      <div class="f"><label>План для</label>
+        <select id="planExec" onchange="planExecChange(this.value)">
+          <option value="">Все исполнители</option>
+          <option value="R">Р — Руслан</option>
+          <option value="I">И — Ильнур</option>
+        </select></div>
+      <div class="f"><label>Режим</label>
+        <div style="display:flex;gap:8px">
+          <label style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:13px;background:var(--input-bg)"><input type="radio" name="pmode" checked onchange="planMode('auto')">Авто</label>
+          <label style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:13px;background:var(--input-bg)"><input type="radio" name="pmode" onchange="planMode('manual')">Вручную</label>
+        </div></div>
+    </div>
     <div id="planListWrap" style="display:none">
       <label style="font-size:12px;color:var(--text-2);font-weight:500;display:block;margin-bottom:5px">Задачи: сверху важнее — перетаскивайте мышкой, ✕ — убрать из плана</label>
-      <div class="pl-list" id="planTaskList">
-        ${list.map(t=>`<div class="pl-row" draggable="true" data-pid="${t.id}" ondragstart="planDragStart(event,'${t.id}')" ondragend="planDragEnd()" ondragover="planDragOver(event,'${t.id}')">
-          <span class="pl-h">⠿</span>
-          <span style="flex:1;min-width:0;word-break:break-word">${esc(t.name)}</span>
-          ${t.date?`<span class="dl${t.date<today()?' dl-over':''}" style="flex-shrink:0">📅 ${fmtD(t.date)}</span>`:''}
-          <button class="ic del" onclick="planRemove('${t.id}')" title="Убрать из плана">✕</button>
-        </div>`).join('')||'<div class="empty">Нет активных задач</div>'}
-      </div>
+      <div class="pl-list" id="planTaskList"></div>
     </div>
     <div class="mbtns">
       <button class="btn bg2" onclick="closeOv()">Отмена</button>
       <button class="btn bp" onclick="buildPlanFromModal()">Сформировать</button>
     </div>`;
+  planExecChange('');
   document.getElementById('overlay').classList.add('open');
+}
+function planExecChange(v){
+  _planExec=v;
+  const el=document.getElementById('planTaskList');
+  if(el)el.innerHTML=planRowsHtml(v);
+  const info=document.getElementById('planInfo');
+  if(info){
+    const days=weekDays();
+    const cnt=[...courts].filter(c=>!c.finished&&c.dt&&c.dt<=days[days.length-1]&&(!v||c.exec===v||!c.exec||c.exec==='O')).length;
+    info.innerHTML=`Период: <b>${fmtD(days[0])} – ${fmtD(days[days.length-1])}</b> · Судов: <b>${cnt}</b> — в свои дни первыми, подготовка за день до заседания.`;
+  }
+}
+function planRowsHtml(exec){
+  return planAutoOrder(exec).map(planRowH).join('')||'<div class="empty">Нет активных задач</div>';
+}
+function planRowH(t){
+  return `<div class="pl-row" draggable="true" data-pid="${t.id}" ondragstart="planDragStart(event,'${t.id}')" ondragend="planDragEnd()" ondragover="planDragOver(event,'${t.id}')">
+    <span class="pl-h">⠿</span>
+    <span style="flex:1;min-width:0;word-break:break-word">${esc(t.name)}</span>
+    ${t.date?`<span class="dl${t.date<today()?' dl-over':''}" style="flex-shrink:0">📅 ${fmtD(t.date)}</span>`:''}
+    <button class="ic del" onclick="planRemove('${t.id}')" title="Убрать из плана">✕</button>
+  </div>`;
 }
 function planMode(m){_planMode=m;document.getElementById('planListWrap').style.display=m==='manual'?'block':'none';}
 function planRemove(id){const r=document.querySelector('#planTaskList [data-pid="'+id+'"]');if(r)r.remove();}
@@ -1752,9 +1808,9 @@ function planDragOver(e,id){
   else list.insertBefore(src,tgt.nextSibling);
 }
 function planDragEnd(){_planDrag=null;}
-function buildPlan(taskIds,days){
+function buildPlan(taskIds,days,exec){
   const dayMap={};days.forEach(d=>dayMap[d]={courts:[],prep:[],tasks:[]});
-  const wkCourts=[...courts].filter(c=>!c.finished&&c.dt&&c.dt<=days[days.length-1])
+  const wkCourts=[...courts].filter(c=>!c.finished&&c.dt&&c.dt<=days[days.length-1]&&(!exec||c.exec===exec||!c.exec||c.exec==='O'))
     .sort((a,b)=>(a.dt||'').localeCompare(b.dt||'')||((a.tm||'').localeCompare(b.tm||'')));
   wkCourts.forEach(c=>{
     const key=c.dt>=days[0]?c.dt:days[0];
@@ -1775,9 +1831,9 @@ function buildPlan(taskIds,days){
 function buildPlanFromModal(){
   let ids;
   if(_planMode==='manual')ids=[...document.querySelectorAll('#planTaskList .pl-row')].map(r=>r.dataset.pid);
-  else ids=planAutoOrder().map(t=>t.id);
+  else ids=planAutoOrder(_planExec).map(t=>t.id);
   const days=weekDays();
-  const plan=buildPlan(ids,days);
+  const plan=buildPlan(ids,days,_planExec);
   closeOv();
   renderPlanResult(plan);
 }
@@ -1801,7 +1857,7 @@ function renderPlanResult(plan){
   document.getElementById('modal').innerHTML=`
     <div class="mhd"><h2>📅 План на неделю</h2>
       <button class="cls" onclick="closeOv()">×</button></div>
-    <div style="font-size:12px;color:var(--text-2);margin-bottom:10px">${fmtD(plan.days[0])} – ${fmtD(plan.days[plan.days.length-1])}</div>
+    <div style="font-size:12px;color:var(--text-2);margin-bottom:10px">${_planExec?('Для: <b>'+({R:'Руслан',I:'Ильнур'}[_planExec]||_planExec)+'</b> · '):''}${fmtD(plan.days[0])} – ${fmtD(plan.days[plan.days.length-1])}</div>
     <div class="plan-grid">${html}</div>
     <div class="mbtns">
       <button class="btn bg2" onclick="copyPlan()">📋 Копировать</button>
@@ -1811,7 +1867,7 @@ function renderPlanResult(plan){
 }
 function copyPlan(){
   const plan=_lastPlan;if(!plan)return;
-  const lines=[];
+  const lines=[`План на неделю${_planExec?' ('+({R:'Руслан',I:'Ильнур'}[_planExec]||_planExec)+')':''}: ${fmtD(plan.days[0])} – ${fmtD(plan.days[plan.days.length-1])}`];
   plan.days.forEach(d=>{
     const dm=plan.dayMap[d];
     lines.push(WD[new Date(d+'T00:00:00').getDay()]+' '+fmtD(d));
